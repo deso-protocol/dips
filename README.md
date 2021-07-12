@@ -44,6 +44,7 @@ Examples of small changes include:
 - Fixing small bugs that don't affect consensus
 - Correcting inconsistent APIs, logging, or configuration options
 - Upgrading dependencies
+- Clarify CIP process
 
 ### Medium Changes
 
@@ -60,6 +61,7 @@ Examples of medium changes include:
 - Redesigning a frontend component
 - Adding new configuration options
 - Refactoring one package or a few files
+- Change the CIP Process, excl those listed below under Large changes
 
 ### Large Changes
 
@@ -85,4 +87,7 @@ Examples of large changes include:
 - Changing or adding a transaction
 - Any soft or hard fork to consensus
 - Refactoring multiple packages or repositories
-- A significant change to the CIPs process
+- A significant change to the CIPs process, including: 
+  - Change levels & their definitions
+  - Who approves changes at different levels
+
