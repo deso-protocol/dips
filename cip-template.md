@@ -40,9 +40,6 @@ Provide a list of other ideas that you considered and their pros and cons.
 This will help community understand the constraints under which other ideas were
 not chosen.
 
-## Data Storage Change
-Identify the additional storage requirement in the blockchain due to this change.
-
 ## Acknowledgements
 If there were additional community members that helped you guide / hone your
-thoughts, or members whose feedback was constructive to make this CIP better.
+thoughts, or members who gave constructive feedback to make this CIP better.
