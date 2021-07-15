@@ -22,6 +22,9 @@ Include an explanation of the "why" behind this CIP. What problem does it solve?
 The technical specification should describe the new feature in deep technical detail. It should be detailed enough to allow for complete implementation.
   
 Include the rationale behind any decisions. If there were any approaches that didn't work, feel free to explain them to help future devs understand why things are the way they are.
+ 
+### Data Storage Change
+Identify the additional storage requirement in the blockchain due to this change. Carefully consider if this CIP is creating additional duplication or if there are opportunity to optimize increase in size due to this CIP.
 
 ## Backwards Compatibility
 All CIPs that introduce backwards incompatibilities must include a section describing these incompatibilities and their severity. The CIP must explain how the author proposes to deal with these incompatibilities.
