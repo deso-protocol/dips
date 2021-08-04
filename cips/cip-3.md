@@ -33,7 +33,7 @@ Implementation will be similar to any forking change. A blockheight will be used
 nodes in the network time to upgrade. After that blockheight, all diamond transactions will be paid
 with CLOUT instead of creator coin.
 
-### Data Storage Change
+## Data Storage Change
 
 This change will increase the storage requirements for diamonds on the chain. Creator coins are
 stored using a balance model on the chain. Therefore, in the existing state, if a diamond receiver
