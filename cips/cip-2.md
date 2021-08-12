@@ -1,7 +1,7 @@
 ---
 cip: 2
 title: BitClout NFTs
-author: @diamondhands
+author: diamondhands
 discussions-url: https://github.com/bitclout/cips/pull/92
 created: 2021-07-15
 ---
