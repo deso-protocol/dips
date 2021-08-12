@@ -90,17 +90,7 @@ Below are just some examples of the possibilities...
 * **Digital trading cards.** Any sufficiently-well-known creator can create digital trading cards of themselves simply by issuing a "one of N" NFT. All they need to do is create a unique piece of artwork, like a [cryptopunk](https://www.larvalabs.com/cryptopunks) drawing of themselves, and their biggest fans can sport it on their profiles. Notably, each BitClout NFT has a serial number, so each one will be special, even within the same issue. [@ab84](https://bitclout.com/u/ab84), could you be the first BitClout NFT trading card!
 * **Fine art.** Major artists have shown that NFTs are going to be a big part of the future of fine art. They not only allow anyone to enjoy the artist's work, but they also do a much better job of tracking the ownership of a piece, which means the provenance can't be forged. The fact that BitClout also incorporates the artist's identity, via their profile, into the minting of an NFT should, we hope, further increase the value and utility of NFTs issued by artists. Artists on BitClout have already been innovating extremely fast, and we're so excited to take things to the next level with BitClout NFTs. Maybe we can even get [@beeple](https://bitclout.com/u/beeple) to finally claim his profile!
 * **The future of Charity.** Charities can create profiles on BitClout, just like ordinary people. When they do this, anyone can elect to send them BitClout as part of the sale of their NFT. For example, someone could auction off a dinner with themselves, but specify that all the proceeds will go to The Red Cross. They would then be able to digitally prove that the funds went to that charity. Alternatively, a charity can participate in the fun directly by issuing NFTs of their own. For example, a charity could issue NFTs where each one represents a particular acre of trees that will be planted. This allows the owner to show off their contribution to any cause they care deeply about, which could significantly increase the amounts people are willing to give. It's a bit surprising that social media and charity aren't more closely linked today-- but we believe BitClout can finally change that, and make giving easier and more fun than ever before.
-* **Owning a piece of history.** On BitClout, any post that a user makes can also be minted
-
-  as an NFT and sold. The user who "owns" the resulting NFT can be seen as owning a piece of
-
-  history. For example, if a sitting US president theoretically joined BitClout in the future and
-
-  used it to make a monumental announcement, like the end of US COVID lockdowns, someone could
-
-  own that very special post, and all proceeds could be donated to a charity of the president's
-
-  choice. We'll also settle for another shirtless pic of [@chamath](https://bitclout.com/u/chamath), though, just to be clear.
+* **Owning a piece of history.** On BitClout, any post that a user makes can also be minted as an NFT and sold. The user who "owns" the resulting NFT can be seen as owning a piece of history. For example, if a sitting US president theoretically joined BitClout in the future and used it to make a monumental announcement, like the end of US COVID lockdowns, someone could own that very special post, and all proceeds could be donated to a charity of the president's choice. We'll also settle for another shirtless pic of [@chamath](https://bitclout.com/u/chamath), though, just to be clear.
 
 The above list is just the beginning; it's just what we've come up with so far. We can't wait to see what the community produces once BitClout NFTs are actually out in the world.
 
@@ -122,45 +112,20 @@ The easiest way to see how BitClout NFTs will work is to check out [this deck](h
 
 Very simply, the steps to minting and selling a BitClout NFT are as follows:
 
-* Create a post, which consists of a snippet of text and an embedded image or video. All
-
-  NFTs on BitClout start as posts, and you can turn any pre-existing post into an NFT.
+* Create a post, which consists of a snippet of text and an embedded image or video. All NFTs on BitClout start as posts, and you can turn any pre-existing post into an NFT.
 
 * Hit "Mint NFT" and select from the options:
-  * You can mint either a "one of a kind" or "one of N" NFT. In the latter case, there will
+  * You can mint either a "one of a kind" or "one of N" NFT. In the latter case, there will be multiple winners of the same piece of content.
 
-    be multiple winners of the same piece of content.
+  * The creator can set a creator royalty and a coin-holder royalty. This is a percentage of the sale that will go to the creator and to the creator's coin-holders as a cashflow. This cashflow hits on every **secondary sale** of the NFT as well. The BitClout platform does not take a fee. Note we are working on allowing arbitrary public keys to be specified as a means of programatically distributing proceeds to other accounts, such as charity accounts.
 
-  * The creator can set a creator royalty and a coin-holder royalty. This is a percentage
+  * Optionally, the creator can set a piece of unlockable content that only the winner of the NFT will get access to. This feature enables hyper-exclusive experiences to be built on BitClout NFTs, like one of a kind songs that only the winner can listen to.
 
-    of the sale that will go to the creator and to the creator's coin-holders as a cashflow.
+* Once an NFT is minted, users can bid on the NFT. They must have enough in their wallet to cover the bid, but nothing is withdrawn from their wallet until the auction is closed by the creator. This allows users to bid on as many things as they like.
 
-    This cashflow hits on every **secondary sale** of the NFT as well. The BitClout platform
+* Whenever the creator is ready, they can close the auction by selecting a winner, or winners in the case of a "one of N" NFT. Importantly, the creator has full control over who gets to own their work; they don't have to give it to the highest bidder.
 
-    does not take a fee. Note we are working on allowing arbitrary public keys to be specified
-
-    as a means of programatically distributing proceeds to other accounts, such as charity accounts.
-
-  * Optionally, the creator can set a piece of unlockable content that only the winner of
-
-    the NFT will get access to. This feature enables hyper-exclusive experiences to be built 
-
-    on BitClout NFTs, like one of a kind songs that only the winner can listen to.
-* Once an NFT is minted, users can bid on the NFT. They must have enough in their wallet
-
-  to cover the bid, but nothing is withdrawn from their wallet until the auction is closed
-
-  by the creator. This allows users to bid on as many things as they like.
-
-* Whenever the creator is ready, they can close the auction by selecting a winner, or
-
-  winners in the case of a "one of N" NFT. Importantly, the creator has full control over
-
-  who gets to own their work; they don't have to give it to the highest bidder.
-
-* Once the auction is over, the winner\(s\) get to show off the NFT on their profile. It
-
-  shows up in their NFTs tab, and it can be pinned to their main page.
+* Once the auction is over, the winner\(s\) get to show off the NFT on their profile. It shows up in their NFTs tab, and it can be pinned to their main page.
 
 We didn't want to over-complicate things, and we believe this simple set of features enables all of the interesting use-cases described previously.
 
