@@ -8,8 +8,8 @@ assignees: ''
 ---
 
 Please post all bugs in their respective repositories:
-- https://github.com/bitclout/core
-- https://github.com/bitclout/backend
-- https://github.com/bitclout/frontend
-- https://github.com/bitclout/identity
-- https://github.com/bitclout/docs
+- https://github.com/deso-protocol/core
+- https://github.com/deso-protocol/backend
+- https://github.com/deso-protocol/frontend
+- https://github.com/deso-protocol/identity
+- https://github.com/deso-protocol/docs
