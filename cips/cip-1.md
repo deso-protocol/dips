@@ -14,7 +14,7 @@ Allow users to delegate signing permissions to another private key using only Ex
 
 Today, iOS and Android apps have full access to a user’s key material. This means
 any third-party app can steal the user's key material after they log in, even if
-this login ostensibly occurs in a BitClout Identity window.
+this login ostensibly occurs in a DeSo Identity window.
 
 To prevent this,
 our options are to either require all
@@ -24,7 +24,7 @@ latter would make it so that the key material the app gets isn't useful after
 some period of time, limiting the attack surface.
 
 Most users don’t want to approve every transaction they perform on a third
-party app. Core product features like diamonds make transferring CLOUT and creator coins an
+party app. Core product features like diamonds make transferring DESO and creator coins an
 action users do multiple times per day. Furthermore, we have learned there is
 no way to run a signing service in the background on iOS. For all these
 reasons, we should solve for providing third party apps with easy access to

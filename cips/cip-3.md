@@ -2,7 +2,7 @@
 cip: 3
 title: Diamonds Paid In CLOUT
 author: RedPartyHat <@redpartyhat>
-discussions-url: https://github.com/bitclout/cips/discussions/26
+discussions-url: https://github.com/deso-protocol/dips/discussions/26
 created: 2021-08-04
 ---
 
@@ -12,7 +12,7 @@ Pay for diamonds with CLOUT instead of creator coins.
 
 ## Explanation and Motivation
 
-"Diamonds" are a tool that allow users to show their love for a creator's work on BitClout. A user
+"Diamonds" are a tool that allow users to show their love for a creator's work on DeSo. A user
 can give up to six diamonds per post and each diamond given comes with a reward for the creator. A
 single diamond gives the creator ~0.005 USD (half a penny) at the time of writing. Each additional
 diamond 10x's the reward, up to ~$500 USD for six diamonds. This has already become a significant
