@@ -1,5 +1,5 @@
 ---
-cip: 2
+dip: 2
 title: DeSo NFTs
 author: diamondhands
 discussions-url: https://github.com/deso-protocol/dips/pull/92
@@ -57,7 +57,7 @@ Below are just some examples of the possibilities...
 #### **New NFT Use Cases**
 
 * **Collectible ticket stubs.** If you were to sell tickets to a concert in the form of DeSo NFTs, then every attendee would automatically get a virtual ticket stub on their profile commemorating the event that their friends would get to see \(not to mention the extra promo you'll get from your coin-holders!\). Could you imagine if [@3LAU](https://bitclout.com/u/3LAU) sold his tickets as DeSo NFTs? This mechanic could also be used to sell tickets to exclusive events like the premier of a movie or an exclusive gala.
-* **Physical memorabilia: The digital collector's room**. Imagine selling a physical piece of memorabilia, like a prop from a movie set, with an NFT attached, issued by the original seller, that the 
+* **Physical memorabilia: The digital collector's room**. Imagine selling a physical piece of memorabilia, like a prop from a movie set, with an NFT attached, issued by the original seller, that the
 
   buyer gets to flex on their profile. This turns a user's profile into an inventory of their collector's room, where you can see all of the cool things they own, both in the digital and physical world, with
 
@@ -190,7 +190,7 @@ See the PRs linked previously.
 There are a few risks to be aware of with NFTs:
 
 * The cashflows that go back to the creator coins will potentially break the price
-computation for some coins, which has already been a minor issue. It's difficult to 
+computation for some coins, which has already been a minor issue. It's difficult to
 predict whether this will be bad enough to warrant rethinking how we display creator coins
 and so we are taking a "wait and see" approach to this for now.
 * The way NFTs are implemented, they introduce a new mechanic whereby the seller of

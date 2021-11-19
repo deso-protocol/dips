@@ -1,5 +1,5 @@
 ---
-cip: 1
+dip: 1
 title: Simple Key Delegation
 author: Mae Beam <@maebeam>
 discussions-url: N/A

@@ -28,9 +28,9 @@ out the guidelines in the next section first.
 
 ## The Life of a Change
 
-Changes can be small, medium, or large and there are different guidelines 
-for each size of change. If you're unsure which guidelines to follow, simply 
-[ask on Discord](https://discord.gg/deso) and someone will help you 
+Changes can be small, medium, or large and there are different guidelines
+for each size of change. If you're unsure which guidelines to follow, simply
+[ask on Discord](https://discord.gg/deso) and someone will help you
 figure out the right path to submitting your change.
 
 ### Small Changes
@@ -70,11 +70,11 @@ For large changes, a little more work is required. In order, you should:
 to get buy-in for your work from the community and at least one
 [core dev](https://github.com/orgs/deso-protocol/people).
 This is not always required. For example, if a core dev already approved your idea
-then you can skip this step. Additionally, note that we are actively working to 
+then you can skip this step. Additionally, note that we are actively working to
 expand the group of core devs.
 2. Once the community and at least one core dev approves your proposal, create a pull request
 on the DIPs repo describing your change in full detail.
-[Use the DIP template](https://github.com/deso-protocol/dips/blob/main/cip-template.md) for creating
+[Use the DIP template](https://github.com/deso-protocol/dips/blob/main/dip-template.md) for creating
 your DIP.
 3. The community and core devs will review your DIP PR and provide feedback. Once
 at least two core devs approve, your PR can be merged and is now an official DIP.
@@ -87,7 +87,7 @@ Examples of large changes include:
 - Changing or adding a transaction
 - Any soft or hard fork to consensus
 - Refactoring multiple packages or repositories
-- A significant change to the DIPs process, including: 
+- A significant change to the DIPs process, including:
   - Change levels & their definitions
   - Who approves changes at different levels
 
