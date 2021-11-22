@@ -1,5 +1,5 @@
 ---
-cip: <to be assigned>
+dip: <to be assigned>
 title: <DIP title>
 author: <a list of the author's or authors' name(s) and/or username(s), or name(s) and email(s), e.g. (use with the parentheses or triangular brackets): FirstName LastName (@GitHubUsername), FirstName LastName <foo@bar.com>, FirstName (@GitHubUsername) and GitHubUsername (@GitHubUsername)>
 discussions-url: <URL>
@@ -20,9 +20,9 @@ Include an explanation of the "why" behind this DIP. What problem does it solve?
 
 ## Specification
 The technical specification should describe the new feature in deep technical detail. It should be detailed enough to allow for complete implementation.
-  
+
 Include the rationale behind any decisions. If there were any approaches that didn't work, feel free to explain them to help future devs understand why things are the way they are.
- 
+
 ### Data Storage Change
 Identify any additional storage requirements in the blockchain due to this change. Carefully consider if there are opportunities to optimize storage requirements.
 

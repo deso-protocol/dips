@@ -1,5 +1,5 @@
 ---
-cip: 3
+dip: 3
 title: Diamonds Paid In CLOUT
 author: RedPartyHat <@redpartyhat>
 discussions-url: https://github.com/deso-protocol/dips/discussions/26
