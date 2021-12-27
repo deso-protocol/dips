@@ -74,7 +74,7 @@ An additional test is included in `TestMessageParty()`:
 This change doesn't affect security of any other DeSo transaction. Messaging keys are secured with owner-signed signatures and so they can't be spoofed by adversaries. The DeSo Identity Service remains unaffected with all functionality unrelated to messages.
 
 ## Alternate designs considered
-There was an alternative design considered based on generating the messaging keys randomly; however, this design wouldn't allow the DeSo Identity to easily derive a private key given a messaging key, and attempts to fix this would arrive at similar method to the proposed design of pseudo-random key derivation with a trapdoor. 
+There was an alternative design considered based on generating the messaging keys randomly; however, this design wouldn't allow the DeSo Identity to easily derive a private key given a messaging key, and attempts to fix this would arrive at similar method to the proposed design of pseudo-random key derivation with a trapdoor. Another potential design was making messaging keys a new transaction; however, this would result in a forking change.
 
 ## Acknowledgements
 Special thanks to @diamondhands0 and @maebeam for helping with shaping the DeSo V3 Messages protocol.
