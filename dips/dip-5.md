@@ -77,4 +77,4 @@ This change doesn't affect security of any other DeSo transaction. Messaging key
 There was an alternative design considered based on generating the messaging keys randomly; however, this design wouldn't allow the DeSo Identity to easily derive a private key given a messaging key, and attempts to fix this would arrive at similar method to the proposed design of pseudo-random key derivation with a trapdoor. 
 
 ## Acknowledgements
-Special thanks to @diamondhands0 and @maebeam for helping with shaping the DeSo V3 protocol.
+Special thanks to @diamondhands0 and @maebeam for helping with shaping the DeSo V3 Messages protocol.
