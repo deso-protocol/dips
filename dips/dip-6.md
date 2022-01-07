@@ -87,15 +87,17 @@ very simple on-chain functions become available on the profile:
   coins**: This prevents any new coins from ever being minted in the future (only
   the profile owner can execute this one). Triggering this function can give coin-holders
 confidence in the max supply of the DAO Coin.
-  - **Enabling and Disabling Coin Transfers**
-    * **Turn on transfer restriction**. By default, DAO Coins can be freely transferred. However,
-the owner of the profile can enable transfer restriction via this function. When they do this, 
-transfers of coins must be approved by the owner of the profile.
-    * **Turn off transfer restriction**. This allows the owner of the profile to turn off 
-transfer restriction. Transfer restriction can be turned on later after this function has been
+  - **Enabling and Disabling Coin Transfer Restrictions**
+    * **Require approval on all transfers**. By default, DAO Coins can be freely transferred. However,
+the owner of the profile can make it so that all transfers require their approval.
+    * **Require approval on transfers to new members.** The owner of the profile can alternatively 
+make it so that transfers of DAO coins are unrestricted among *existing* holders of the DAO coin,
+but require approval by the owner of the profile *outside* of this group.
+    * **Turn off all transfer restrictions**. This allows the owner of the profile to turn off 
+all transfer restrictions. Transfer restrictions can be turned on later after this function has been
 executed.
-    * **Permanently disable transfer restriction**. This allows the owner of the profile to
-permanently disable transfer restrictions. Doing this can give coin-holders confidence that
+    * **Permanently disable all transfer restrictions**. This allows the owner of the profile to
+permanently disable all transfer restrictions. Doing this can give coin-holders confidence that
 their coins will always be freely-transferrable, similar to how disabling minting can
 give coin-holders confidence in the max supply.
 * These functions can then be called or
@@ -158,8 +160,9 @@ useful.
 
 Below is the technical proposal for implementing DAO Coins into the
 DeSo blockchain:
-* New TxnType
+* New TxnTypes
   - TxnTypeDAOCoin, similar to TxnTypeCreatorCoin
+  - TxnTypeDAOCoinTransfer, similar to TxnTypeCreatorCoinTransfer 
 * Add new [CoinEntry](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/block_view_types.go#L777) to profile:
   - Call it DAOCoinEntry and add it [here](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/block_view_types.go#L850)
   - This will be a second instance of CoinEntry with the exact same fields
@@ -167,7 +170,8 @@ DeSo blockchain:
   - Define a type TransferRestrictionStatus with the following values:
     * Unrestricted = 0 // default
     * ProfileOwnerOnly = 1 // Transfers to/from the profile owner are the only transfers allowed when this is set
-    * PermanentlyUnrestricted = 2
+    * ExistingDAOMembersUnrestricted = 2 // Same as ProfileOwnerOnly, except that transfers among existing DAO coin holders are unrestricted
+    * PermanentlyUnrestricted = 3
   - Set a field in the CoinEntry with the type of TransferRestrictionStatus
 * Changes to [db\_utils.go](https://github.com/deso-protocol/core/blob/main/lib/db_utils.go) are required:
   - Need [two new indexes](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/db_utils.go#L166) for DAO coins that are identical to what we 
@@ -182,12 +186,14 @@ only it supports different OperationTypes. Recall that CreatorCoin supports "buy
     * Burn: Destroys DAO coins held by the caller
     * DisableMinting: Prevents new coins from ever being minted. Must be called by the owner of the profile associated with the DAO coin.
     * ModifyTransferRestriction: With this operation, the user can change the TransferRestrictionStatus of the DAO Coin. Below are the options:
-      - Set TransferRestrictionStatus = 1
-        * Can only be triggered if TransferRestrictionStatus = 0
       - Set TransferRestrictionStatus = 0
-        * Can only be triggered if TransferRestrictionStatus = 1
+        * Can only be triggered if TransferRestrictionStatus != 3
+      - Set TransferRestrictionStatus = 1
+        * Can only be triggered if TransferRestrictionStatus != 3
       - Set TransferRestrictionStatus = 2
-        * Can be triggered at any time
+        * Can only be triggered if TransferRestrictionStatus != 3
+      - Set TransferRestrictionStatus = 3
+        * Can be triggered at any time. Irreversible once triggered.
 * \_connectDAOCoinTransfer
   - This will be virtually identical to [\_connectCreatorCoinTransfer](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/block_view_creator_coin.go#L1463), only it will act 
 on the DAOCoin balances in the db, rather than on the CreatorCoin balances
