@@ -2,7 +2,7 @@
 dip: 6
 title: DAO Coins: The Future of Fundraising on the Internet
 author: @diamondhands
-discussions-url: https://github.com/deso-protocol/dips/discussions/188
+discussions-url: N/A
 created: 2022-12-06
 ---
 
