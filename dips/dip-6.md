@@ -170,7 +170,7 @@ DeSo blockchain:
   - Define a type TransferRestrictionStatus with the following values:
     * Unrestricted = 0 // default
     * ProfileOwnerOnly = 1 // Transfers to/from the profile owner are the only transfers allowed when this is set
-    * ExistingDAOMembersUnrestricted = 2 // Same as ProfileOwnerOnly, except that transfers among existing DAO coin holders are unrestricted
+    * ExistingDAOMembersOnly = 2 // Same as ProfileOwnerOnly, except that transfers among existing DAO coin holders are unrestricted
     * PermanentlyUnrestricted = 3
   - Set a field in the CoinEntry with the type of TransferRestrictionStatus
 * Changes to [db\_utils.go](https://github.com/deso-protocol/core/blob/main/lib/db_utils.go) are required:
