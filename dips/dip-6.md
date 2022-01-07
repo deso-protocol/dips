@@ -207,7 +207,10 @@ the owner approves the transfer in the UI. To
 implement this constraint in consensus, the \_connectDAOCoinTransfer function should
 error immediately unless the following condition is met:
     * profileOwnerIsInTransfer := (profile owner is recipient) || (profile owner is sender)
+    * daoMemberIsRecipient := (recipient has a non-zero balance of the DAO coin being transferred)
     * if (TransferRestrictionStatus == TransferRestrictionStatusProfileOwnerOnly) && !profileOwnerIsInTransfer {
+      - error
+    * } else if (TransferRestrictionStatus == TransferRestrictionStatusDAOMembersOnly) && !profileOwnerIsInTransfer && !daoMemberIsRecipient {
       - error
     * }
 
