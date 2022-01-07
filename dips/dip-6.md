@@ -8,7 +8,7 @@ created: 2022-12-06
 
 ## One-Line Description
 
-This proposal allows DeSo profiles to have DAO Coins in addition to Creator Coins
+This proposal introduces DAO Coins to the DeSo ecosystem
 
 ## Explanation and Motivation
 
