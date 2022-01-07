@@ -8,7 +8,7 @@ created: 2022-12-06
 
 ## One-Line Description
 
-This proposal introduces DAO Coins to the DeSo ecosystem
+This proposal introduces a new paradigm called *DAO Coins* to the DeSo ecosystem
 
 ## Explanation and Motivation
 
@@ -88,14 +88,14 @@ very simple on-chain functions become available on the profile:
   the profile owner can execute this one). Triggering this function can give coin-holders
 confidence in the max supply of the DAO Coin.
   - **Enabling and Disabling Coin Transfers**
-    * **Turn on transfer approval**. By default, DAO Coins can be freely transferred. However,
-the owner of the profile can enable transfer approval via this function. When they do this, 
+    * **Turn on transfer restriction**. By default, DAO Coins can be freely transferred. However,
+the owner of the profile can enable transfer restriction via this function. When they do this, 
 transfers of coins must be approved by the owner of the profile.
-    * **Turn off transfer approval**. This allows the owner of the profile to turn off 
-transfer approval. Transfer approval can be turned on later after this function has been
+    * **Turn off transfer restriction**. This allows the owner of the profile to turn off 
+transfer restriction. Transfer restriction can be turned on later after this function has been
 executed.
-    * **Permanently disable transfer approval**. This allows the owner of the profile to
-permanently disable transfer approvals. Doing this can give coin-holders confidence that
+    * **Permanently disable transfer restriction**. This allows the owner of the profile to
+permanently disable transfer restrictions. Doing this can give coin-holders confidence that
 their coins will always be freely-transferrable, similar to how disabling minting can
 give coin-holders confidence in the max supply.
 * These functions can then be called or
@@ -164,12 +164,11 @@ DeSo blockchain:
   - Call it DAOCoinEntry and add it [here](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/block_view_types.go#L850)
   - This will be a second instance of CoinEntry with the exact same fields
 * Add a new field to the CoinEntry:
-  - Define a type TransferApprovalStatus with the following valued:
-    * ApprovalOff = 0 // default
-    * ApprovalOn = 1
-    * ApprovalPermanentlyDisabled = 2
-  - Set a field in the CoinEntry with the type of TransferApprovalStatus
-under the existing CreatorCoin CoinEntry.
+  - Define a type TransferRestrictionStatus with the following values:
+    * RestrictionOff = 0 // default
+    * RestrictionOn = 1
+    * RestrictionPermanentlyDisabled = 2
+  - Set a field in the CoinEntry with the type of TransferRestrictionStatus
 * Changes to [db\_utils.go](https://github.com/deso-protocol/core/blob/main/lib/db_utils.go) are required:
   - Need [two new indexes](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/db_utils.go#L166) for DAO coins that are identical to what we 
 currently have for CreatorCoins:
@@ -182,14 +181,17 @@ only it supports different OperationTypes. Recall that CreatorCoin supports "buy
     * Mint: Creates DAO coins for the caller only if they are the own the profile associated with the DAO coin being called
     * Burn: Destroys DAO coins held by the caller
     * DisableMinting: Prevents new coins from ever being minted. Must be called by the owner of the profile associated with the DAO coin.
-    * TurnOnTransferApproval: Sets TransferApprovalStatus = 1
-      - Can only be triggered if TransferApprovalStatus = 0
-    * TurnOffTransferApproval: Sets TransferApprovalStatus = 0
-    * PermanentlyDisableTransferApproval: Sets TransferApprovalStatus = 2
+    * ModifyTransferRestriction: With this operation, the user can change the TransferRestrictionStatus of the DAO Coin. Below are the options:
+      - Set TransferRestrictionStatus = 1
+        * Can only be triggered if TransferRestrictionStatus = 0
+      - Set TransferRestrictionStatus = 0
+        * Can only be triggered if TransferRestrictionStatus = 1
+      - Set TransferRestrictionStatus = 2
+        * Can be triggered at any time
 * \_connectDAOCoinTransfer
   - This will be virtually identical to [\_connectCreatorCoinTransfer](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/block_view_creator_coin.go#L1463), only it will act 
 on the DAOCoin balances in the db, rather than on the CreatorCoin balances
-  - Additionally, when transfer approval is turned on, we only allow
+  - Additionally, when transfer restriction is turned on, we only allow
 transfers to/from the profile owner. This is a bit of a hack, but it fully solves for the
 use-case of wanting a profile owner to approve transfers between other parties. To implement
 an approval UI, a smart service would simply need a derived key from the transferrer with
@@ -199,7 +201,7 @@ the owner approves the transfer in the UI. To
 implement this constraint in consensus, the \_connectDAOCoinTransfer function should
 error immediately unless the following condition is met:
     * profileOwnerIsInTransfer := (profile owner is recipient) || (profile owner is sender)
-    * if (TransferApprovalStatus == TransferApprovalOn) && !profileOwnerIsInTransfer {
+    * if (TransferRestrictionStatus == TransferRestrictionOn) && !profileOwnerIsInTransfer {
       - error
     * }
 
