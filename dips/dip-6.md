@@ -34,7 +34,7 @@ They made it so easy to invest in someone that
 [a frenzy of speculation ensued](https://www.newyorker.com/tech/annals-of-technology/the-dark-democratizing-power-of-the-social-media-stock-market), 
 and the investing continues today with volume of
 about $100k-$2M per day. Creator Coins also allowed many creators to earn [hundreds of thousands
-of dollars](https://cloutomy.com/rank/usd) off their content, where traditional social social platforms
+of dollars](https://cloutomy.com/rank/usd) off their content, where traditional social platforms
 had never paid them a penny.
 
 **But Creator Coins were meant for *people*-- they were
@@ -165,9 +165,9 @@ DeSo blockchain:
   - This will be a second instance of CoinEntry with the exact same fields
 * Add a new field to the CoinEntry:
   - Define a type TransferRestrictionStatus with the following values:
-    * RestrictionOff = 0 // default
-    * RestrictionOn = 1
-    * RestrictionPermanentlyDisabled = 2
+    * Unrestricted = 0 // default
+    * ProfileOwnerOnly = 1 // Transfers to/from the profile owner are the only transfers allowed when this is set
+    * PermanentlyUnrestricted = 2
   - Set a field in the CoinEntry with the type of TransferRestrictionStatus
 * Changes to [db\_utils.go](https://github.com/deso-protocol/core/blob/main/lib/db_utils.go) are required:
   - Need [two new indexes](https://github.com/deso-protocol/core/blob/5764fb519e19a0e44487cd592bee98cbaade6f71/lib/db_utils.go#L166) for DAO coins that are identical to what we 
@@ -201,7 +201,7 @@ the owner approves the transfer in the UI. To
 implement this constraint in consensus, the \_connectDAOCoinTransfer function should
 error immediately unless the following condition is met:
     * profileOwnerIsInTransfer := (profile owner is recipient) || (profile owner is sender)
-    * if (TransferRestrictionStatus == TransferRestrictionOn) && !profileOwnerIsInTransfer {
+    * if (TransferRestrictionStatus == TransferRestrictionStatusProfileOwnerOnly) && !profileOwnerIsInTransfer {
       - error
     * }
 
