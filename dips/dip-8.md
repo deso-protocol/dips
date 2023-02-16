@@ -4,11 +4,7 @@ author: Piotr Nojszewski <DeSo: @petern | GH: @AeonSw4n >
 created: 2023-02-16
 ---
 # Access Group and New Message Technical Report
-
-
-## Dynamic Multiparty Key Exchange with Implementation to Group Messaging
-
-------------
+### Dynamic Multiparty Key Exchange with Implementation to Group Messaging
 
 
 ## Introduction
