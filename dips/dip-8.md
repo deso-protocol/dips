@@ -16,13 +16,6 @@ created: 2023-02-16
 This document details the design and purpose of three new transactions: `"ACCESS_GROUP,"` `"ACCESS_GROUP_MEMBERS,"` and `"NEW_MESSAGE,"` that were added to the DeSo Core during the [v3.1.0 release](https://github.com/deso-protocol/core/releases/tag/v3.1.0). Access groups enable secure on-chain multiparty key exchange. Our access groups framework is non-interactive, with a single key pair responsible for all group operations[^1]. The member set can be dynamically adjusted, allowing the creation of large groups where access can be frequently granted or revoked. The framework has a storage complexity of O(**n**) to support **n**-party key exchange and an O(1) online running time for adding or removing a single member[^2]. Additionally, removing a single member with a key rotation incurs an O(log(**n**)) running time[^3]. Further, the new transactions enable a more efficient private direct messaging (DM) and introduce private group chat messaging (GC), leveraging access groups for GC membership management. Sending a message to both DM and GC threads incurs an O(1) running time and O(**l**) storage complexity, where **l** is the length of the message sent.
 
 
-### Table of Contents
-
-
-[TOC]
-
-
-
 ### Motivation
 
 Access groups came to be due to our efforts to implement E2EE group chats on DeSo. Before the v3.1.0 release, DeSo supported direct messaging secured by the cryptographic identities of the participants[^4]. As we approached group chats, we realized that the cryptography used in the 2-party messaging was not adaptable to the multiparty case[^5]. Consequently, a new approach was needed altogether.
