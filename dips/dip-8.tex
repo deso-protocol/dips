@@ -358,7 +358,7 @@ Key rotation is useful in the applications of access groups such as group chats.
     \end{footnotesize}
 \end{center}
 
-\subsubsection{\textbf{Binary Access Group}}
+\subsubsection{Binary Access Group}
 The Binary Access Group is a name for a special nesting of membership relations between access groups in a pattern resembling a complete binary tree. The tree's root node represents the access group metadata, and the tree's leaf nodes represent the proper members of the key exchange. The non-root, non-leaf nodes are referred to as sub-groups\fn{In the diagram, the blue sub-group objects are of type AccessGroupMemberEntry, whereas only the root node is of type AccessGroupEntry. In addition, each sub-group must have an AccessGroupEntry registered.}. The root node stores the encrypted main group secret. Each access group node \textbf{BN}, including the root, has at most two children access group members that can access \textbf{BN} group’s secret. The childrens’ sub-trees divide the subset of proper members under \textbf{BN}’s sub-tree into two halves. The proper key exchange members, leaf nodes, should always be on the same depth equal to the ceil(log(\textbf{n})), where ceil is the ceiling function. The total number of nodes in the Binary Access Group tree is about 2*\textbf{n}, counting up from the main root access group down to the leaf descendant member groups. In addition to the Binary Access Group, we store a Membership Access Group with all proper group members for reference purposes.\newpage
 
 \noindent\textbf{Indexing}\\
