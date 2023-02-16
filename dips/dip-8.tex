@@ -1,0 +1,638 @@
+\documentclass[oneside, 12pt]{article}
+
+\linespread{1.2}
+\usepackage{geometry}
+\geometry{a4paper, margin=1.0in}
+\usepackage{textcomp}
+\usepackage{amsthm,amssymb}
+\usepackage{amsmath}
+\usepackage{comment}
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+}
+\usepackage{anyfontsize}
+\usepackage{t1enc}
+\usepackage[most]{tcolorbox}
+
+\newtheorem{theorem}{Theorem}[]
+\newtheorem{lemma}{Lemma}[]
+\newtheorem{corollary}{Corollary}[]
+\newtheorem{definition}[theorem]{Definition}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\m}{\textrm{-}}
+\newcommand\bigforall{\mbox{\Large $\mathsurround0pt\forall$}}
+\newcommand\bigexists{\mbox{\Large $\mathsurround0pt\exists$}}
+\newcommand{\tn}[1]{\textnormal{#1}}
+\newcommand{\pr}{\textnormal{\textbf{Pr}}}
+\usepackage{csquotes}
+\usepackage[maxbibnames=99]{biblatex}
+\addbibresource{references.bib}
+\newcommand{\ogi}{G_i\in \mathcal{G}}
+\usepackage[colorinlistoftodos]{todonotes}
+
+\usepackage{array}
+\usepackage{graphicx}
+\newcolumntype{C}{>$c<$}
+\usepackage{pdfpages}
+\usepackage{titling}
+\newcommand{\subtitle}[1]{%
+\posttitle{%
+\par\end{center}
+\begin{center}\large#1\end{center}}%
+}
+
+\usepackage{fancyvrb,newverbs,xcolor}
+\usepackage{lipsum}% just for this example
+
+\definecolor{cverbbg}{gray}{0.93}
+
+\newenvironment{cverbatim}
+ {\SaveVerbatim{cverb}}
+ {\endSaveVerbatim
+  \flushleft\fboxrule=0pt\fboxsep=.5em
+  \colorbox{cverbbg}{\BUseVerbatim{cverb}}%
+  \endflushleft
+}
+\newenvironment{lcverbatim}
+ {\SaveVerbatim{cverb}}
+ {\endSaveVerbatim
+  \flushleft\fboxrule=0pt\fboxsep=.5em
+  \colorbox{cverbbg}{%
+    \makebox[\dimexpr\linewidth-2\fboxsep][l]{\BUseVerbatim{cverb}}%
+  }
+  \endflushleft
+}
+
+\newcommand{\ctexttt}[1]{\colorbox{cverbbg}{\texttt{#1}}}
+\newverbcommand{\cverb}
+  {\setbox\verbbox\hbox\bgroup}
+  {\egroup\colorbox{cverbbg}{\box\verbbox}}
+
+\usepackage{hanging}
+% provides the \hangpara command
+
+\usepackage[flushmargin]{footmisc}
+% sets the footnote mark just left of the left margin border
+
+\renewcommand{\footnotemargin}{1em}
+% changes the above and sets the footnote mark just right of the left margin border.
+
+\newcommand{\fn}[1]{\footnote{\hangpara{1.4em}{1} #1}}
+% makes a new footnote command \fn{} with a hanging indent of 3em (hanging indent starts after the first line)
+
+\begin{document}
+\title{Access Group and New Message Technical Report}
+
+\subtitle{\color{gray}\normalsize Dynamic Multiparty Key Exchange with Implementation to Group Messaging}
+
+\author{\small{Piotr Nojszewski}}
+\date{\scriptsize{Draft Version: 0.2 \\ February 16, 2023}}
+
+\maketitle
+
+\begin{tikzpicture}[overlay, remember picture]
+\path (current page.north) ++(0,-4) node {\color{gray}\small Decentralized Social};
+\end{tikzpicture}
+
+\section{Introduction}
+This document details the design and purpose of three new transactions: \texttt{"ACCESS\_GROUP,"} \texttt{"ACCESS\_GROUP\_MEMBERS,"} and \texttt{"NEW\_MESSAGE,"} that were added to the DeSo Core during the \href{https://github.com/deso-protocol/core/releases/tag/v3.1.0}{v3.1.0 release}. Access groups enable secure on-chain multiparty key exchange. Our access groups framework is non-interactive, with a single key pair responsible for all group operations\fn{It is worth noting that in our approach, only a single party is responsible for the secret generation. We do not consider a key-agreement scenario. While a single owner key pair is used in the registration and operation of an access group, other keys can be given permissions to this owner key pair via DeSo derived keys.}. The member set can be dynamically adjusted, allowing the creation of large groups where access can be frequently granted or revoked. The framework has a storage complexity of O(\textbf{n}) to support \textbf{n}-party key exchange and an O(1) online running time for adding or removing a single member\fn{When we use the asymptotic big-O notation to describe computational complexity, the base operation we’re counting is encryption/decryption.}. Additionally, removing a single member with a key rotation incurs an O(log(\textbf{n})) running time\fn{Key rotation refers to a scenario where we remove members from the key exchange group while simultaneously changing the group’s key to a new one, only shared with the new key exchange group. We dedicated a section later in the document regarding key rotations.}. Further, the new transactions enable a more efficient private direct messaging (DM) and introduce private group chat messaging (GC), leveraging access groups for GC membership management. Sending a message to both DM and GC threads incurs an O(1) running time and O(\textbf{l}) storage complexity, where \textbf{l} is the length of the message sent.
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Motivation}
+Access groups came to be due to our efforts to implement E2EE group chats on DeSo. Before the v3.1.0 release, DeSo supported direct messaging secured by the cryptographic identities of the participants\fn{Messages sent between the parties were secured by public-key encryption using ECIES. The parties would compute an ECDH shared secret on the secp256k1 elliptic curve and then use it to encrypt their messages via AES safely. The ciphertext would finally be stored on the DeSo replicated state machine for the consumption of the application layer.}. As we approached group chats, we realized that the cryptography used in the 2-party messaging was not adaptable to the multiparty case\fn{In particular, the shared secret ECDH scheme used in direct messaging has no intuitive expansion to non-interactive group secret sharing.}. Consequently, a new approach was needed altogether.
+
+Analyzing the problem of implementing group chats, one of the fundamental requirements of a solution is storing message threads containing E2EE message records. A natural solution is to encrypt all messages within a group chat with a single secret key known only by the group members. The secret can then be obfuscated so it can be stored safely on the public DeSo state machine. The public information would reveal the secret to all group members, yet it would appear indistinguishable from random data to an outsider. Such a protocol is known in the literature as a multiparty key exchange over an insecure communication channel\fn{Multiparty key exchange problem has many solutions in literature, such as this notable \href{https://eprint.iacr.org/2013/642.pdf}{example}.}. However, in the case of group chats, it would be convenient to have the ability to inexpensively adjust the key exchange party set so that the group chat moderators can add or remove users dynamically. Studying the literature, we could not find a low-complexity multiparty key exchange solution offering efficient adjustments to the party size under operations such as key rotation. As a result, we designed access groups. It is worth noting that access groups are decoupled from group chats. Access groups implement a self-contained multiparty key exchange scheme,  portable to other useful features such as member-only private content, or on-chain derived key\fn{DeSo derived keys allow users to give account permissions to chosen public keys. Access groups could be used to distribute derived key secrets among multiple users on-chain.} private distribution. Group chats use access groups as a dependency. To summarize, our implementation of group chats consists of two main components:
+
+\begin{enumerate}
+  \item Group membership management and secret key exchange (Access Groups)
+  \item Storage and indexing of encrypted messages (New Message)
+\end{enumerate}
+
+\section{Access Groups}
+Access groups combine a low-complexity multiparty key exchange scheme with a flexible graph-like data structure. Every DeSo user is uniquely identified by their public key, and their private key is used to create proofs of this identity through digital signatures. In access groups, users’ <public key, private key> pairs are used for public-key encryption via ECIES\fn{Section 5.1 of \href{https://www.secg.org/sec1-v2.pdf}{SEC 1}.}. To create an access group, the group owner will first generate a secret and register the secret’s public key on the blockchain. To add members to the access group, the group owner (or a moderator) retrieves the group’s secret and encrypts it to each new member. The encrypted keys are then added to the DeSo state, and they’ll reveal the secret key to all members, who hold decryption keys, yet will appear indistinguishable from a random string to every non-member\fn{Access groups can be characterized as a multiparty version of the encryption-based Authenticated Key Exchange, for example, as defined in \href{http://toc.cryptobook.us/book.pdf}{Section 21.2 of Boneh, Shoup}.}.
+
+For each access group, the DeSo blockchain stores a metadata record (AccessGroupEntry) and a collection of member records (AccessGroupMemberEntry), holding encrypted key shares for all members participating in the access group. Access group member records point to an existing, registered access group of the member, and the encrypted secret is addressed to the member’s access group. Structurally, we can think of metadata records as vertices in a graph of all access groups. Then, member records represent directed edges between different vertices in this graph. If we look at Diagram 1. we can see an example of three access groups registered by users Alice, Bob, and Carol. Alice’s group has Bob and Carol as members. Consequently, Alice’s group stores a metadata record and two member records holding Alice’s secret encrypted to Bob and Carol. Bob’s group has Carol as member, so it stores one metadata record and one member record. The result of these membership relations is a graph with three directed edges Alice -> Bob, Alice -> Carol, Bob -> Carol.
+
+In the following sections, we will discuss the implementation details of access group and access group member objects and corresponding state transactions.
+
+\includegraphics[width=\textwidth]{dip-8-media-1}
+\begin{center}
+    \begin{footnotesize}
+    \textbf{Diagram 1.} Simplified overview of three access groups created by Alice, Bob, and Carol.
+    \end{footnotesize}
+\end{center}
+
+\subsection{Data Layer}
+This section will analyze what’s stored in the state with each access group transaction. An access group comprises an AccessGroupEntry object containing information about the group, and a collection of AccessGroupMemberEntry objects containing encrypted key share records of each member. The objects are defined as follows:
+
+\subsubsection{\texttt{AccessGroupEntry}}
+\begin{lcverbatim}
+{
+   AccessGroupOwnerPublicKey [33]byte
+   AccessGroupKeyName        [32]byte
+   AccessGroupPublicKey      [33]byte
+   ExtraData                 map[string][]byte
+}
+\end{lcverbatim}
+
+Users can create access groups by signing and broadcasting \texttt{"ACCESS\_GROUP"} transactions. When executed, these transactions will write the \texttt{AccessGroupEntry} records to the blockchain state. Looking at the individual fields of this entry:
+
+\begin{itemize}
+  \item \texttt{AccessGroupOwnerPublicKey} field is the public key of the transactor who registered the group.
+
+  \item \texttt{AccessGroupKeyName} is the 32-character access group secondary identifier\fn{In case the user wants a shorter key name, DeSo core currently appends padding of byte(0) characters until reaching 32 characters in length. This suffix can also easily be erased to get the initial key name.}. Our choice of 32 characters identifier length was motivated by the matching output length of a sha256 hash function. We add a constraint in the transaction validation logic that allows only a single \texttt{<AccessGroupOwnerPublicKey, AccessGroupKeyName>} to be registered at a time. This pair is referred to as \textit{AccessGroupId}, and we will describe it in the following section.
+
+  \item \texttt{AccessGroupPublicKey} is the public key of the secret shared within this group on secp256k1 curve.
+
+  \item \texttt{ExtraData} field allows storing any key-value data associated with the access group.
+
+\end{itemize}
+
+It is worth noting that \texttt{AccessGroupEntry} doesn’t store any private key material. Private key copies will instead be stored encrypted in the member entries.
+
+\subsubsection{AccessGroupId}
+Each access group is uniquely identified by an \textit{AccessGroupId} equal to the pair \newline \ctexttt{<AccessGroupOwnerPublicKey, AccessGroupKeyName>}. We will sometimes shorthand this pair by e.g. saying “\textit{UserAccessGroupId}” for better readability.
+
+\subsubsection{\texttt{AccessGroupMemberEntry}}
+\begin{lcverbatim}
+{
+   AccessGroupMemberPublicKey [33]byte
+   AccessGroupMemberKeyName   [32]byte
+   EncryptedKey               []byte
+   ExtraData                  map[string][]byte
+}
+\end{lcverbatim}
+
+Users can add access group members by signing and broadcasting \texttt{"ACCESS\_GROUP\_MEMBERS"} transactions. When executed, these transactions will write the \texttt{AccessGroupMemberEntry} records to the blockchains state. Looking at the fields of this struct:
+
+\begin{itemize}
+  \item \texttt{AccessGroupMemberPublicKey} is the public key of the member user of this group.
+  \item \texttt{AccessGroupMemberKeyName}, is any 32-character group key name. Together these two fields form the \textit{MemberAccessGroupId} of an access group belonging to the member user. As mentioned, member records can be considered as edges between access groups. The \textit{AccessGroupId} is the source, and \textit{MemberAccessGroupId} is the destination of this edge. A restriction currently applies in the DeSo Core where \textit{MemberAccessGroupId} cannot equal the group’s \textit{AccessGroupId}; this invalidates loop edges.
+  \item \texttt{EncryptedKey} field contains the encrypted group secret share. The recipient of this encryption is the \texttt{AccessGroupPublicKey} stored in the access group identified by \textit{MemberAccessGroupId}. The access group member can use the corresponding secret stored within the \textit{MemberAccessGroupId} group to decrypt the \texttt{EncryptedKey}. This design choice leads to various interesting properties, such as allowing an access group of users to immediately gain access to another access group with an overhead of just a single \texttt{AccessGroupMemberEntry} added to the state. As we’ll later see, this can be further used to facilitate an efficient key rotation in an access group.
+  \item \texttt{ExtraData} field allows storing any key-value data associated with the access group member.
+\end{itemize}
+
+\subsubsection{AccessGroupMemberId}
+Similarly to \texttt{AccessGroupEntry} objects, the member entries can be assigned an identifier. Each \texttt{AccessGroupMemberEntry} object is uniquely identified by an \textit{AccessGroupMemberId} consisting of:
+\newline\ctexttt{<AccessGroupOwnerPublicKey, AccessGroupKeyName, AccessGroupMemberPublicKey>}.
+
+\includegraphics[width=\textwidth]{dip-8-media-2}
+\begin{center}
+    \begin{footnotesize}
+    \textbf{Diagram 2.} A visual representation of the relationship between access group and access group member objects.
+    \end{footnotesize}
+\end{center}
+
+\subsection{Base Key}
+The base key is a particular access group pre-defined for every user. This access group is never stored as part of the DeSo state; however, it exists for the purpose of transaction validation. The group is identified by the id of \texttt{<UserPublicKey, null>} where null is an array consisting of 32 byte(0) characters. The base key represents the user’s key pair. In particular, \texttt{AccessGroupOwnerPublicKey}and \texttt{AccessGroupPublicKey}are the same and equal to the \texttt{UserPublicKey} in the base key access group. Since access groups are used for key exchange to mitigate key leakage, the base key cannot have any \texttt{AccessGroupMemberEntries} registered.
+
+\subsection{Standards}
+The access group framework is open for community-defined transaction standards. These standards could include encryption schemes, special keys in the \texttt{ExtraData,} or special members in access groups. These standards won’t be part of the canonical transaction validation logic in DeSo Core (at least initially) and instead will live in the application layer where Backend or Frontend software can interpret the data accordingly. We suggest two such standards: one related to encryption, and one, which we call the “Default Key Standard,” related to access groups.
+
+\subsubsection{\texttt{EncryptedKey} Standard}
+It is worth noting that to this point, we haven’t mentioned what exactly is stored in the \texttt{EncryptedKey} field of the access group member entries. That’s because DeSo core applies no limitations on this field, and it’s up to the application layer to correctly compute these values.
+
+\ctexttt{EncryptedKey:} Our suggested approach to securing the access group’s secret for members is to encrypt the group’s secret using an ECIES scheme. We recommend the combination of AES-128-CTR, Concatenation KDF based on SHA256, and HMAC based on SHA256. DeSo blockchain uses secp256k1 elliptic curve and we recommend the same curve in ECIES\fn{One can indicate that this is the scheme used by setting an optional flag in access group’s \texttt{ExtraData} such as: \texttt{ExtraData["EncryptedKeyStandard"]: "ecies"}}. The process of encrypting access group’s secret to members is exemplified in \textbf{Diagram 2.} There, Alice’s group secret, the \textit{GroupAlicePrivateKey}, is encrypted to the public key stored in Bob’s access group, \textit{GroupBobPublicKey}. The ciphertext is then stored as \textit{EncryptedSecretBob1} in a member entry in Alice’s group. Given the knowledge of \textit{GroupBobPrivateKey} (2), Bob can then decrypt the ciphertext to get the secret \textit{GroupAlicePrivateKey.}
+
+Anytime the \texttt{EncryptedKey} field is decrypted by a member, it must be verified that the decrypted secret matches the \texttt{AccessGroupPublicKey} as specified in the access group entry. If the secret doesn’t match, the group should be ignored. Sometimes, the \texttt{EncryptedKey} field might not need decryption. In the case of public group chats, no encryption is needed, yet access groups are used for membership management. In such a case, the \texttt{EncryptedKey} can be left empty, and appropriate \texttt{ExtraData} keys should be set.
+
+\subsubsection{Default Key Standard}
+Default Key Standard, \textbf{DKS}, introduces default key pairs which are intended to work like the user's second key pair. The default key is a particular access group that replaces the user’s owner key pair in all access group-related encryption. First, we define a key derivation function\fn{Use little-endian encoding for the version.}:\\
+
+\small{
+\begin{lcverbatim}
+groupPrivateKey(privateKey [32]byte, keyName [32]byte, version uint) :=
+   sha256x2(sha256x2(privateKey) || sha256x2(keyName) || sha256x2(version))
+\end{lcverbatim}
+}
+
+\noindent The main advantage of this function is that it is a deterministic one-way function seeded by a couple of useful parameters. Moreover, this key derivation does not suffer from Privilege Escalation Attacks\fn{Privilege Escalation Attacks refer to Bitcoin’s Hierarchical Wallet derivation. In the attack, the holder of any of the child keys, along with the main public key can deduce the private keys of any other children’s keys. There have been proposals that offer wallet derivation without privilege escalation, \href{https://ieeexplore.ieee.org/document/8625151}{such as this work}.}, so the knowledge of an individual output key does not reveal other keys.\\
+
+\noindent\underline{\textbf{DKS standard requests applications build atop of DeSo to:}}
+
+\begin{enumerate}
+  \item For each new user, create a special AccessGroupEntry with an identifier of <UserPublicKey, "default-key">\fn{The individual values for the “default-key” string are \texttt{[100, 101, 102, 97, 117, 108, 116, 45, 107, 101, 121]}} where the ASCII key name is padded to 32 bytes with a suffix of byte(0) characters. The derived key can be generated by computing\fn{wrap(...) here means that the ASCII string “default-key” is padded with a byte(0) suffix until reaching 32 bytes in length.}:
+  \begin{verbatim}
+      defaultKeyAccessGroupPrivateKey =
+        groupPrivateKey(user’s private key, wrap(“default-key”), version)
+  \end{verbatim}
+  \vspace*{-0.5cm}
+  with the version beginning from 0 and incrementing with any key rotation. Records can be set in access group entry \texttt{ExtraData} for key-value pairs \texttt{\{"derivation": "deso-kdf"\}} to indicate how private key was derived, and \texttt{\{"version": 0\}} to track group version.
+
+  \item Whenever generating an access group, use the default key as input to a deterministic key derivation to compute the group secret. If the default key is unavailable, generate it first. If the group creator is not the group owner, the proper owner’s default key must be added to the group’s members. The group’s private key should be computed as
+  \begin{verbatim}
+    anyKeyAccessGroupPrivateKey =
+        groupPrivateKey(default private key, key name, version)
+  \end{verbatim}
+  \vspace*{-0.5cm}
+  The \texttt{ExtraData} could be populated with \texttt{"derivation"} and \texttt{"version"} key-value pairs. The group owner should be added as a member by their default key. We can see this in \textbf{Diagram 2.} where Alice and Bob added themselves by default keys.
+
+  \item Whenever adding another user as member to an access group, use their \texttt{<MemberPublicKey, "default-key">} access group as member entry. If such a group doesn’t exist, use the \texttt{<MemberPublicKey, null>} base key instead.
+
+\end{enumerate}
+
+\noindent These standards allow for safe access-sharing of the default key, which is responsible for content encryption, with the applications bearing no risk of revealing the user’s primary transactional key. The default key will then be used in all encryption/decryption among access groups. The proper usage of the standard is displayed in \textbf{Diagram 2.} There, Alice and Bob have both added their default keys as member entries. So they can now use their default keys to compute the secrets of their respective access groups.
+
+\subsection{Transactions}
+To set access group and access group member entries in the state, users sign and broadcast \texttt{"ACCESS\_GROUP"}, \texttt{"ACCESS\_GROUP\_MEMBERS"} transactions. All DeSo transactions implement the \texttt{MsgDeSoTxn} type with varying \texttt{TxnMeta} transaction metadata types, which effectively determines the transaction type. The transaction metadata fields will in most cases directly match the fields in \texttt{AccessGroupEntry} and \texttt{AccessGroupMemberEntry}. We also use an operation type \texttt{AccessGroupOperationType}to, in some cases, allow for updating or removing state entries.
+
+\subsubsection{\texttt{ACCESS\_GROUP} Transaction}
+There are two primary operations that the DeSo blockchain enables to modify the \texttt{AccessGroupEntry} records: \textbf{Set} and \textbf{Update}. These operations are facilitated through an  \texttt{AccessGroupOperationType} byte field in transaction metadata.\\
+
+\noindent\underline{\textbf{Set an \texttt{AccessGroupEntry}}}\\
+The \ctexttt{AccessGroupOperationType} must be set to \textbf{2}\\
+\noindent This transaction sets a new \texttt{AccessGroupEntry} under the provided \textit{AccessGroupId} of \\\texttt{<AccessGroupOwnerPublicKey, AccessGroupKeyName>}.
+
+\begin{lcverbatim}
+MsgDeSoTxn
+{
+    TxInputs  []*DeSoInput
+    TxOutputs []*DeSoOutput
+    TxnMeta   AccessGroupMetadata {
+        AccessGroupOwnerPublicKey []byte
+        AccessGroupPublicKey      []byte
+        AccessGroupKeyName        []byte
+        AccessGroupOperationType  uint8
+    }
+    PublicKey []byte
+        // Currently PublicKey must be equal to AccessGroupOwnerPublicKey
+        // for all access group transactions.
+    ExtraData map[string][]byte
+        // ExtraData will be set in the AccessGroupEntry
+}
+\end{lcverbatim}
+\ \\
+\noindent\underline{\textbf{Update an \texttt{AccessGroupEntry}}}\\
+The \ctexttt{AccessGroupOperationType} must be set to \textbf{3}\\
+\noindent This transaction overwrites the \texttt{AccessGroupEntry} with the provided \textit{AccessGroupId} of \\\texttt{<AccessGroupOwnerPublicKey, AccessGroupKeyName>}
+
+\begin{lcverbatim}
+MsgDeSoTxn
+{
+    TxInputs  []*DeSoInput
+    TxOutputs []*DeSoOutput
+    TxnMeta   AccessGroupMetadata {
+        AccessGroupOwnerPublicKey []byte
+        AccessGroupPublicKey      []byte
+        AccessGroupKeyName        []byte
+        AccessGroupOperationType  uint8
+    }
+    PublicKey []byte
+        // Currently PublicKey must be equal to AccessGroupOwnerPublicKey
+        // for all access group transactions.
+    ExtraData map[string][]byte
+        // ExtraData will be set (not merged) in the AccessGroupEntry.
+}
+\end{lcverbatim}
+
+\subsubsection{\texttt{ACCESS\_GROUP\_MEMBERS} Transaction}
+There are three operations that the DeSo blockchain enables to modify the \texttt{AccessGroupMemberEntry} records: \textbf{Set}, \textbf{Update}, and \textbf{Remove}. These operations are facilitated through an \\\texttt{AccessGroupMemberOperationType} byte field in transaction metadata. The transaction allows performing a given operation on multiple access group members simultaneously. These members are passed through a metadata field \texttt{AccessGroupMembersList} which is an array of \texttt{AccessGroupMember} types:
+
+\begin{lcverbatim}
+AccessGroupMember
+{
+  AccessGroupMemberPublicKey []byte
+  AccessGroupMemberKeyName   []byte
+  EncryptedKey               []byte
+  ExtraData                  map[string][]byte
+}
+\end{lcverbatim}
+
+\noindent These objects are stored directly as \texttt{AccessGroupMemberEntries} given the \textit{AccessGroupMemberId}, a combination of \textit{AccessGroupId} from transaction metadata and \texttt{AccessGroupMemberPublicKey}.\\
+
+\noindent\underline{\textbf{Set an \texttt{AccessGroupMemberEntry}}}\\
+The \texttt{AccessGroupMemberOperationType} must be set to \textbf{2}\\
+This transaction sets new AccessGroupMemberEntry records based on the \textit{AccessGroupId} and individual \textit{AccessGroupMemberId} from the metadata.
+
+\begin{lcverbatim}
+MsgDeSoTxn
+{
+    TxInputs  []*DeSoInput
+    TxOutputs []*DeSoOutput
+    TxnMeta   AccessGroupMembersMetadata {
+        AccessGroupOwnerPublicKey      []byte
+        AccessGroupKeyName             []byte
+        AccessGroupMembersList         []AccessGroupMember
+        AccessGroupMemberOperationType byte
+    }
+    PublicKey []byte
+        // Currently PublicKey must be equal to AccessGroupOwnerPublicKey
+        // for all access group transactions.
+    ExtraData map[string][]byte
+        // This ExtraData is only for validation purposes and is not persisted in the state.
+}
+\end{lcverbatim}
+\ \\
+\noindent\underline{\textbf{Update \texttt{AccessGroupMemberEntry}}}\\
+The \texttt{AccessGroupMemberOperationType} must be set to \textbf{3}\\
+This transaction overwrites the \texttt{AccessGroupMemberEntry} records based on the \textit{AccessGroupId} and individual \textit{AccessGroupMemberId} from the metadata. The transaction structure is identical to the \textbf{Set \texttt{AccessGroupMemberEntry}} operation.\\
+
+\noindent\underline{\textbf{Remove \texttt{AccessGroupMemberEntry}}}\\
+The \texttt{AccessGroupMemberOperationType} must be set to \textbf{4}\\
+This transaction deletes existing \texttt{AccessGroupMemberEntry} records based on the \textit{AccessGroupId} and individual \textit{AccessGroupMemberId} from the metadata. The transaction structure is identical to the
+\textbf{Set \texttt{AccessGroupMemberEntry}} operation, except the individual \texttt{AccessGroupMember} objects in the \texttt{AccessGroupMembersList} must follow two constraints.\\
+
+\noindent Transaction metadata constraints:
+\begin{enumerate}
+  \item Every \texttt{AccessGroupMember} in \texttt{AccessGroupMembersList} must have empty \texttt{EncryptedKey} and \texttt{ExtraData}.
+  \item Every \texttt{AccessGroupMember} in \texttt{AccessGroupMembersList} must have an \texttt{AccessGroupKeyName} identical to the corresponding \texttt{AccessGroupMemberEntry} that’s currently stored in the state.
+\end{enumerate}
+
+\subsection{Key Rotation}
+Key rotation is useful in the applications of access groups such as group chats. It allows revoking the access of a chosen subset of members and moving to a new secret value known only to the remaining members. The trivial solution is to generate a new secret for the group and share it with all non-removed members. We call this algorithm a \textbf{Key Refresh}\fn{To maintain backward compatibility, Key Refresh should never permanently erase past secrets. Instead, it should use a Backward Link as described in Appendix A.}. If we remove just a single member from a group of \textbf{n} members, Key Refresh yields a computational complexity of O(\textbf{n}). Key Refresh is not too efficient, as e.g. attempting to remove a single member from a populous group of 1 million members would mean updating and re-encrypting a million members every time. Our efforts led us to find an algorithm with a lower complexity of O(log(\textbf{n})), thanks to a special structure called \textbf{Binary Access Group}. This structure drops the cost of removing a single member and rotating the key in said group of 1 million members down to 20 update operations\fn{There is a constant factor so, in practice, it is more like 40-60.}.
+
+\includegraphics[width=\textwidth]{dip-8-media-3}
+\begin{center}
+    \begin{footnotesize}
+    \textbf{Diagram 3.} A visual representation of a Binary Access Group with \textbf{n}=4 and \textbf{n}=8.
+    \end{footnotesize}
+\end{center}
+
+\subsubsection{\textbf{Binary Access Group}}
+The Binary Access Group is a name for a special nesting of membership relations between access groups in a pattern resembling a complete binary tree. The tree's root node represents the access group metadata, and the tree's leaf nodes represent the proper members of the key exchange. The non-root, non-leaf nodes are referred to as sub-groups\fn{In the diagram, the blue sub-group objects are of type AccessGroupMemberEntry, whereas only the root node is of type AccessGroupEntry. In addition, each sub-group must have an AccessGroupEntry registered.}. The root node stores the encrypted main group secret. Each access group node \textbf{BN}, including the root, has at most two children access group members that can access \textbf{BN} group’s secret. The childrens’ sub-trees divide the subset of proper members under \textbf{BN}’s sub-tree into two halves. The proper key exchange members, leaf nodes, should always be on the same depth equal to the ceil(log(\textbf{n})), where ceil is the ceiling function. The total number of nodes in the Binary Access Group tree is about 2*\textbf{n}, counting up from the main root access group down to the leaf descendant member groups. In addition to the Binary Access Group, we store a Membership Access Group with all proper group members for reference purposes.\newpage
+
+\noindent\textbf{Indexing}\\
+\noindent Each node \textbf{BN} in the Binary Access Group tree has a unique index, \textit{id}(\textbf{BN}), between 1 and \textbf{n}. This index equals the \textbf{BN}’s in-order position in the tree\fn{This refers to tree traversal, \href{https://en.wikipedia.org/wiki/Tree_traversal}{more information here}.}. We use the index in the \textbf{BN}’s access group key name \textit{key}(\textbf{BN}). If the main root access group has a key name \textbf{KN}, then the \textbf{BN}’s key name is the result of hashing \textbf{KN} concatenated with “-” and \textit{id}(\textbf{BN}), that is \textit{key}(\textbf{BN}) = \textit{sha256x2}(\textbf{KN} || “-” || \textit{id}(\textbf{BN}))\fn{The “-” character has a byte encoding of byte(45), and the \textit{id} function uses little-endian encoding.}. This key function is collision-resistant and should not overlap with an existing access group. \textbf{Diagram 3.} displays proper node indexing for a couple of different sizes of the Binary Access Group.\\
+
+\noindent\textbf{Adding a Single Member}\\
+\noindent\underline{\textbf{A.} If the group doesn’t exist}: Assuming the user wants to name the access group with key name \textbf{KN}, and add a single member \textbf{M1}. The algorithm goes as follows:
+
+\begin{enumerate}
+  \item Create the Membership Access Group \textbf{MAG}, by creating an access group entry with key name \textbf{KN}, secret key \textbf{MAGpriv} generated using the Default Key Standard, DKS 2. and \texttt{ExtraData} key “\textit{BinaryAccessGroup}” with a value of byte(1). Then add the single member \textbf{M1} to \textbf{MAG} with an \texttt{ExtraData} key “\textit{BinaryIndex}” and value of byte(1).
+  \item Create the Leaf Access Group \textbf{BN1} for member \textbf{M1}, \textit{leaf}(\textbf{M1}) = \textbf{BN1}. The group has index \textit{id}(\textbf{BN1}) = 1. This group is a leaf node corresponding to \textbf{M1}. The key name is \textit{key}(\textbf{BN1}) = \textit{sha256x2}(\textbf{KN} || \textbf{“-”} || \textit{id}(\textbf{BN1})), secret key according to \textbf{DKS 2.}, and a single member with \textbf{M1}’s access group.
+  \item Create a Non-Leaf Access Group \textbf{BN2} with index \textit{id}(\textbf{BN2}) = 2, key name is \textit{key}(\textbf{BN2}) = \textit{sha256x2}(\textbf{KN} || \textbf{“-”} || \textit{id}(\textbf{BN2})), secret is \textbf{MAGpriv}.
+  \item Add \textbf{BN1} as a member of \textbf{BN2} by creating an appropriate access group member entry.
+\end{enumerate}
+
+\noindent\underline{\textbf{B.} If the group exists:} To add member \textbf{M} to the Binary Access Group, we add the next in-order leaf node to the tree, possibly expanding the tree upwards from the root.
+
+\begin{enumerate}
+  \item Comparing the current binary access group tree topology to a perfect binary tree, find the index \textbf{mID} of the smallest in-order leaf not currently present in the tree\fn{Members can be removed, which may cause the tree to lose balance. Many re-balancing algorithms can be used. We recommend one approach of only inserting the next largest index.}. If the tree is fully saturated, assume \textbf{n}+1 to be this index.
+  \item Add the member \textbf{M} to the Membership Access Group \textbf{MAG}, set the \texttt{ExtraData} key “\textit{BinaryIndex}” to the value of \textit{byte}(\textbf{mID}), similarly to \textbf{A.1.}
+  \item Create a Leaf Access Group \textbf{BN} for member \textbf{M}, \textit{leaf}(\textbf{M}) = \textbf{BN}, in index \textit{id}(\textbf{BN}) = \textbf{mID}. Proceed analogously to \textbf{A.2}.
+  \item Create a path of Non-Leaf Access Group nodes between \textbf{BN} and the current tree root. Proceed analogously to \textbf{A.3.} Each node should have an index matching its in-order position, assuming a perfect tree. In particular, the parent of \textbf{BN} has an id of \textit{id}(\textbf{BN})+1, and the grandparent has the id of id(\textbf{BN})+2, etc.
+\end{enumerate}
+
+\noindent The total number of nodes that will be added to the tree is 2*\textbf{n}, which means that the average storage complexity and running time of adding a single member is O(1).\\
+
+\noindent\textbf{Retrieving the Group Secret}\\
+\noindent The main key exchange secret \textbf{S} is the secret of the Membership Access Group \textbf{MAG}. As a member \textbf{M} of the \textbf{MAG}, one can get the secret \textbf{S} by traversing the path from the leaf node of \textbf{M} to the root of the Binary Access Group tree. We use a recursive algorithm where we start at the child and use the child node’s secret to decrypt the parent node secret and then traverse up\fn{It’s worth noting that any Backward Links should be appropriately interpreted while traversing up the tree.}. When we reach the root, we return with \textbf{S}. The leaf node is decrypted using the member \textbf{M}’s secret key. As we traverse from the leaf to the root, we perform ceil(log(\textbf{n})) decryptions which yield a total running time of O(log(\textbf{n})).\\
+
+\noindent\textbf{Removing a Single Member}\\
+\noindent To remove a single member \textbf{M} from the group with a key rotation, we must update all nodes in the path from the Leaf Access Group of \textbf{M} to the tree's root node. We perform the following algorithm:
+
+\begin{enumerate}
+  \item Start at current node \textbf{CN} at the parent of \textit{leaf}(\textbf{M)}, and perform the following recursive algorithm:
+
+\begin{tcolorbox}[enhanced, frame hidden]
+\begin{footnotesize}
+\textbf{UpdatePath(CN current node):}
+  \begin{enumerate}
+    \item Update the secret of \textbf{CN} by incrementing the access group version according to DKS 2.
+    \item Update both children access group member entries of \textbf{CN}, re-encrypting their \texttt{EncryptedKey} fields to reflect the new secret.
+    \item If \textbf{CN} has a parent, call \textbf{UpdatePath(parent(CN))}.
+  \end{enumerate}
+\end{footnotesize}
+\end{tcolorbox}
+
+  \item Add a Backward Link to the past secret in the root node, as described in Appendix A.
+
+  \item Delete the \textit{leaf}(\textbf{M}) access group and member entries, also delete \textbf{M} from the Membership Access Group \textbf{MAG}. Update \textbf{MAG} to reflect the new public key of the root node of the Binary Access Group tree.
+
+\end{enumerate}
+
+\noindent As we rotate the key, we update nodes on the path from leaf(\textbf{M}) to the root. Along the way, we also update the members' encrypted keys. This results in a total computational complexity of O(log(\textbf{n})).
+
+\section{New Message}
+Along with the release of access groups, v3.1.0 introduces a redesigned messaging framework based on the \texttt{"NEW\_MESSAGE"} transaction. This transaction replaces and deprecates the previously used \texttt{"PRIVATE\_MESSAGE"} transaction. The DeSo state machine uses a homogeneous data type (\texttt{NewMessageEntry}) for new messages sent in both DM and GC threads. The primary payload of these records is the E2EE message ciphertext. This ciphertext is secured by the key exchange between chat participants. Aside from the ciphertext, all messages have a sender id and recipient id. The ids reference access groups and are of type \textit{AccessGroupId}. In other words, if we consider a graph with all access groups as vertices, messages are edges, similarly to access group member records. Messages also have a timestamp indicating when the message was sent. The timestamps will allow for the chronological ordering of messages in the application layer.\\
+
+\noindent Each message sent must belong to either a DM or a GC thread. A thread refers to a pool of correlated messages that should be displayed together. Currently, DeSo supports two message types:
+
+\begin{enumerate}
+  \item Direct messages, DM thread.
+  \begin{enumerate}
+    \item DM messages can be sent between any two distinct access groups.
+    \item The message's recipient should be the target user's access group.
+  \end{enumerate}
+  \item Group chat messages, GC thread.
+  \begin{enumerate}
+    \item The message's recipient is the access group representing the group chat.
+    \item Group chat messages can only be sent if the sender's public key is the owner or is among the members of the recipient access group.
+  \end{enumerate}
+\end{enumerate}
+
+\noindent The implemented new message transactions allow for two operations: \textbf{\textit{Create}} and \textbf{\textit{Update}}. The users can send messages to their DM and GC threads using the \textit{Create} operation, and they can later edit their messages using the \textit{Update} operation.
+
+\subsection{Data Layer}
+Executing the \texttt{"NEW\_MESSAGE"} transaction sets a \texttt{NewMessageEntry} record in the DeSo state.
+
+\subsubsection{\texttt{NewMessageEntry}}
+\begin{lcverbatim}
+{
+    SenderAccessGroupOwnerPublicKey    []byte
+    SenderAccessGroupKeyName           []byte
+    SenderAccessGroupPublicKey         []byte
+    RecipientAccessGroupOwnerPublicKey []byte
+    RecipientAccessGroupKeyName        []byte
+    RecipientAccessGroupPublicKey      []byte
+    EncryptedText                      []byte
+    TimestampNanos                     uint64
+    ExtraData                          map[string][]byte
+}
+\end{lcverbatim}
+
+\noindent As previously mentioned, new message entries specify the access group ids for the sender and the recipient.
+
+\begin{itemize}
+  \item \texttt{SenderAccessGroupOwnerPublicKey} is and \texttt{SenderAccessGroupKeyName} form an id of \textit{SenderAccessGroupId},
+  \item \texttt{RecipientAccessGroupOwnerPublicKey} and \texttt{RecipientAccessGroupKeyName} form \textit{RecipientAccessGroupId}.
+  \item \texttt{SenderAccessGroupPublicKey} and \texttt{RecipientAccessGroupPublicKey} are the \texttt{AccessGroupPublicKey} fields of the sender and recipient access groups that were used during the message encryption. The purpose of these fields is to ensure that we don’t lose the knowledge of which encryption keys were used, which could happen if either of the access groups withstood a key rotation.
+  \item \texttt{EncryptedText} field stores the encrypted message ciphertext.
+  \item \texttt{TimestampNanos} is a message's unix timestamp in nanoseconds.
+  \item \texttt{ExtraData} allows for storing any key-value data associated with the message.
+\end{itemize}
+
+\subsubsection{\textit{NewMessageId}}
+The current implementation of DeSo Core indexes DMs and GCs differently, even though they store the same data types. This is done for optimization purposes. However, each new message entry can be associated with a unique global identifier across the entire DeSo state. Aside from containing the explicit fields of the new message entry, this identifier uses one implicit single-byte value of \texttt{NewMessageType,}which determines if the message is a DM or a GC. The final identifier looks as follows:
+
+\begin{scriptsize}
+\begin{lcverbatim}
+<SenderAccessGroupOwnerPublicKey, SenderAccessGroupKeyName, RecipientAccessGroupOwnerPublicKey,
+  RecipientAccessGroupKeyName, TimestampNanos, NewMessageType>
+\end{lcverbatim}
+\end{scriptsize}
+
+\subsection{Encryption}
+To secure messages, we suggest using the same public-key encryption scheme as the \texttt{EncryptedKey} standard in access groups. In message encryption, we will first be computing an ECDH shared secret, similar to how it was done in the deprecated private message framework. The shared secret is computed between the private key of the sender’s access group and the public key of the recipient’s access group. The shared secret is then used to encrypt the message content via ECIES. The resulting ciphertext can then be safely published to the DeSo state machine using a \texttt{"NEW\_MESSAGE"} transaction.
+
+The decryption procedure varies slightly between DMs and GCs:
+
+\begin{itemize}
+  \item \textbf{To decrypt a DM message}: determine whether the user is a sender or the recipient in the new message entry. Find the private key stored with user’s access group. Next, compute the ECDH shared secret with the user’s private key, and the other DM party’s public key. The shared secret is the decryption key.
+  \item \textbf{To decrypt a GC message}: the GC access group is always the message recipient. Find the user’s member entry in the GC access group, and decrypt the \texttt{EncryptedKey} to get the group’s private key. Use the group’s private key and the sender’s public key to compute the ECDH secret. This secret is the decryption key.
+\end{itemize}
+
+\subsection{Timestamp}
+Each message has a non-zero unix timestamp in nanoseconds. The sender user provides the timestamp, and its accuracy is not validated in the DeSo Core. Users can potentially submit outdated or future timestamps; however, we decided to accept this scenario, as it could lead to interesting features in messaging applications. For instance, submitting a message with a future timestamp could be seen as a “deliver in the future” functionality. Chat clients could always display messages sent before the user’s current timestamp to disregard future messages. On the other hand, sending messages with past timestamps could be seen as an attempt to overwrite the chat history. We think this won't be much of an issue, and the application layer could implement standards that prevent this.
+
+\subsection{Anonymity}
+Transactions on DeSo are not obfuscated. This means that everyone on the network can read the metadata of every transaction. In particular, everyone can see members of an access group or the sender and the recipient of a message. Each valid transaction also contains a fee paid by the transactor. Given that DeSo’s blockchain data is public, it appears that our intuitive notion of anonymity is hindered. However, we believe reaching anonymity can be solved in the application layer. Perhaps a messaging application can be made that anonymizes users in all their chats, such that the only ones knowledgeable of user’s threads are the chat participants and the Anonymizer App.\\
+
+\noindent We informally define anonymity as a property of a communication protocol that enables user Alice to message user Bob on DeSo privately such that:
+
+\begin{enumerate}
+  \item The protocol is non-interactive.
+  \item Alice and Bob can both efficiently query and decrypt their secret chat, and they can authenticate each other’s identity.
+  \item If another user, Carol, sees the message transactions from Alice’s and Bob’s chat, and Carol is to guess who’s communicating, there would be no algorithm that has a better chance of making a correct guess than a random selection.
+\end{enumerate}
+
+\noindent An efficient protocol that fulfills these properties for DMs and GCs is an open problem. We consider it worth sharing a partial solution only for DM threads involving the Anonymizer App. Let’s say that the app holds a private key \textbf{X}. Let’s also say Alice and Bob both use the Anonymizer App. Alice first generates a messaging key \textbf{\textit{AnonAlicePriv}} using an HD wallet-like key derivation scheme with a random input \textbf{\textit{SeedAlice}}\fn{We colloquially use the term HD wallet-like to describe a user-seeded publicly computable Priv/Pk derivation. To be more precise, let us show an example. Given ECC private key \textbf{\textit{d}} and base point \textbf{\textit{G}}, the user uses seed \textbf{\textit{s}} to compute derived private key \textbf{\textit{d + s}}, and public key (\textbf{\textit{d}} + \textbf{\textit{s}}) * \textbf{\textit{G}}. This scheme has our desired property where anyone could select a \textbf{\textit{sp}} and find user’s derived public key \textbf{\textit{d}} * \textbf{\textit{G}} + \textbf{\textit{sp}} * \textbf{\textit{G}}. A more intricate scheme might be needed in practice to ensure user safety and privacy.}. Then Alice chooses another random input \textbf{\textit{SeedBob}} to obtain Bob’s derived public key \textbf{AnonBobPublic}. Whenever Alice wants to send a message to Bob, she will construct a new message transaction using \textbf{\textit{AnonAlicePriv}}, and encrypt the message to \textbf{\textit{AnonBobPublic}}. The App will send the \$DESO necessary to cover the transaction to \textbf{\textit{AnonAlice}} from \textbf{\textit{X}}. Then the App will use \textbf{X} to store an encrypted blockchain record \textbf{\textit{R}} containing \textbf{\textit{SeedAlice, SeedBob}} and secretly associate them with Alice and Bob. Whenever Alice and Bob want to read their messages, the App will fetch \textbf{\textit{R}} and send the seed values to Alice and Bob, so they know which private keys they should use to decrypt the messages.\\
+
+\noindent In this scheme, only Alice, Bob, and the App know who’s communicating. We will leave the proof of anonymity of the Anonymizer App to the reader. We anticipate other, more robust solutions to anonymization to arise, especially for group chats.
+
+\subsection{Transaction}
+To set new message entries in the state, users sign and broadcast \texttt{"NEW\_MESSAGE"} transactions. The transaction metadata will contain two organizational byte fields \texttt{NewMessageType} and \texttt{NewMessageOperation.}
+
+\subsubsection{NEW\_MESSAGE Transaction}
+
+\noindent\underline{\textbf{Sending a Direct Message}}\\
+The \texttt{NewMessageType} must be set to \textbf{0}. The \texttt{NewMessageOperation} must be set to \textbf{0}.\\
+This transaction sets a new \texttt{NewMessageEntry} under the provided \textit{NewMessageId} of
+
+\begin{scriptsize}
+\begin{lcverbatim}
+<SenderAccessGroupOwnerPublicKey, SenderAccessGroupKeyName, RecipientAccessGroupOwnerPublicKey,
+ RecipientAccessGroupKeyName, TimestampNanos, byte(0)>
+\end{lcverbatim}
+\end{scriptsize}
+
+\noindent The transaction structure is shared among all \texttt{"NEW\_MESSAGE"} transactions:
+
+\begin{lcverbatim}
+MsgDeSoTxn
+{
+    TxInputs  []*DeSoInput
+    TxOutputs []*DeSoOutput
+    TxnMeta   NewMessageMetadata {
+        SenderAccessGroupOwnerPublicKey    [33]byte
+        SenderAccessGroupKeyName           [32]byte
+        SenderAccessGroupPublicKey         [33]byte
+        RecipientAccessGroupOwnerPublicKey [33]byte
+        RecipientAccessGroupKeyName        [32]byte
+        RecipientAccessGroupPublicKey      [33]byte
+        EncryptedText                      []byte
+        TimestampNanos                     uint64
+        NewMessageType                     byte
+        NewMessageOperation                byte
+    }
+    PublicKey []byte
+        // Currently PublicKey must be equal to SenderAccessGroupOwnerPublicKey
+        // for all new message transactions.
+    ExtraData map[string][]byte
+        // ExtraData will be set in the NewMessageEntry
+}
+\end{lcverbatim}
+
+\noindent\underline{\textbf{Updating a Direct Message}}\\
+The \texttt{NewMessageType} must be set to \textbf{0}; the \texttt{NewMessageOperation} must be set to \textbf{1}.\\
+The \textit{NewMessageId} and the transaction structure are identical to Sending a Direct Message case. The \texttt{TimestampNanos} must match an existing message. This transaction will overwrite the \texttt{NewMessageEntry} stored under the \textit{NewMessageId}.\\
+
+\noindent\underline{\textbf{Sending a Group Chat Message}}\\
+The \texttt{NewMessageType} must be set to \textbf{1}; the \texttt{NewMessageOperation} must be set to \textbf{0}.
+The \textit{NewMessageId} for a group chat message is:
+
+\begin{scriptsize}
+\begin{lcverbatim}
+<SenderAccessGroupOwnerPublicKey, SenderAccessGroupKeyName, RecipientAccessGroupOwnerPublicKey,
+RecipientAccessGroupKeyName, TimestampNanos, byte(1)>
+\end{lcverbatim}
+\end{scriptsize}
+
+\noindent The transaction structure is identical to Sending a Direct Message. This transaction will overwrite the \texttt{NewMessageEntry} stored under the \textit{NewMessageId}.\\
+
+\noindent\underline{\textbf{Updating a Group Chat Message}}\\
+The \texttt{NewMessageType} must be set to \textbf{1}; the \texttt{NewMessageOperation} must be set to \textbf{0}.
+The \textit{NewMessageId} is identical to that of Sending a Group Chat Message and the transaction metadata is identical to the Sending a Direct Message. The \texttt{TimestampNanos} must match an existing message. This transaction will overwrite the \texttt{NewMessageEntry} stored under the \textit{NewMessageId}.
+
+\subsection{Additional Features}
+This section looks at potential application-layer features that can be implemented using the access group and new message framework.
+
+\begin{itemize}
+  \item On-chain message reactions: Another DeSo transaction called “\textit{association}” can be used to implement a many-to-one data index with hierarchy (new message) -> (reaction type) -> (count) mappings.
+  \item Rich Text message formatting: Message entries store raw bytes. Application Layer can use custom Rich Text plaintexts and display them accordingly to the users.
+  \item Unencrypted Public Discussions: Access groups can be used with empty \texttt{EncryptedKey}fields, and messages can be sent in plaintext. These group chats would be made public and users could join by invitation.
+  \item Messaging Requests: This would allow users to filter out potential unwanted groups. With messaging requests, if the user is added to some messaging thread, they will see an option to accept the invitation prior to seeing the thread messages. This can be implemented via the \textit{association} transaction storing (\textit{MessagingThread) -> (}“AcceptRequest”) -> (true) mappings in the DeSo state.
+\end{itemize}
+
+\subsection{Limitations}
+While our framework generally does well in the use case of group chats, there are a few limitations that we must yet to overcome.\\
+
+\noindent\textbf{Lost Key Attack}: In this attack, the secret key of one of the thread participants falls into the hands of a malicious adversary. The attacker now gains access to all messages in the thread and can reveal their contents to the public by broadcasting just a single O(1)  thread key. Moreover, because all parties who communicated in the thread signed \texttt{NEW\_MESSAGE} transactions, the attacker will also have cryptographic identity proofs of the sender of each message in the thread.\\
+
+\noindent While we will work on alleviating this limitation, it could be solvable in the application layer.\\
+
+\noindent \textbf{Permanent Removal of Messages}: Currently, messages cannot be guaranteed to be permanently deleted. Anyone who block syncs the chain will eventually download the transaction containing any message ever sent.\\
+
+\noindent This limitation appears challenging to overcome on a public blockchain. Like in the previous limitation, we think that the application layer could make this less of an issue.\\
+
+\noindent\textbf{On-Chain Spam Removal}: It is the application-layer's responsibility to conceal messages labeled as spam. An association transaction can be used to implement “report” or “hide” message functionality, and the application can then hide the message accordingly.\\
+
+\noindent The transaction source code is flexible and we intend to address this issue in a future fork.
+
+\section{Appendices}
+\subsection{Appendix A. Backward and Forward Links}
+During a key rotation in access groups, an old secret is updated with a new one. Now, we don’t necessarily want to lose access to the old key, as it can still be useful in the applications of access groups, such as group chats where we want to maintain access to historical messages. In other words, we want a way to explicitly prevent forward secrecy between the old and the new keys. Usually, the new key is uncorrelated with the old key, so discarding the old key means it’ll be permanently erased. To ensure that access to the old key is not lost, the previous key should be persisted in the access group’s metadata. A safe one-way secret share can be saved, allowing the new key to access the old. We call this one-way share a Backward Link.\\
+
+\noindent\underline{Backward Link after Key Rotation:}\\
+\noindent We suggest an \texttt{ExtraData} field with key \textit{“\textbf{BackwardLinks}”} storing arrays of \textit{BackwardLinkRecord} values, defined as:
+
+\begin{lcverbatim}
+BackwardLinkRecord
+{
+    RotationVersion                        int
+    PreviousAccessGroupPublicKey           []byte
+    CurrentAccessGroupPublicKey            []byte
+    EncryptedPreviousAccessGroupPrivateKey []byte
+}
+\end{lcverbatim}
+
+\noindent We will leave the details of the encoding of this data type to external documentation. Analyzing the fields:
+
+\begin{itemize}
+  \item \texttt{RotationVersion} is an incrementing counter starting from 0 and representing how many key rotations were performed. Adding a new \texttt{BackwardLinkRecord} should have a version +1 to the previous largest version.
+  \item \texttt{PreviousAccessGroupPublicKey} stores the old \texttt{AccessGroupPublicKey} prior to the update transaction.
+  \item \texttt{CurrentAccessGroupPublicKey} stores the public key of the new key after the update transaction.
+  \item \texttt{EncryptedPreviousAccessGroupPrivateKey} is the old secret encrypted to \texttt{CurrentAccessGroupPublicKey}, as outlined in the \texttt{EncryptedKey} Standard for access groups.
+\end{itemize}
+
+\noindent On the other hand, sometimes we might have a need for a Forward Link. This link would give the old key access to the new key, but not necessarily the other way around. Such a link could be useful if, for instance, we update a key in a populous access group and we want to avoid updating the access group members. Instead, we provide information on how to use the old key to get the new one.\\
+
+\noindent\underline{Forward Link after Key Rotation:}\\
+\noindent We suggest an \texttt{ExtraData} field with key \textbf{\textit{“ForwardLink”}} storing arrays of \textit{ForwardLinkRecord} values, defined as:
+
+\begin{lcverbatim}
+ForwardLinkRecord
+{
+    RotationVersion                       int
+    PreviousAccessGroupPublicKey          []byte
+    CurrentAccessGroupPublicKey           []byte
+    EncryptedCurrentAccessGroupPrivateKey []byte
+}
+\end{lcverbatim}
+
+\noindent The ForwardLinkRecord structure is almost identical to the BackwardLinkRecord. The only difference is that it contains the field \texttt{EncryptedCurrentAccessGroupPrivateKey}, which is the current, new key secret encrypted to the \texttt{PreviousAccessGroupPublicKey.}
+
+\section{Acknowledgments}
+Special thanks go to Keshav Maheshwari, LazyNina, DiamondHands, and Karthic Rao who contributed to the design and implementation of the Access Group and New Message framework.
+
+\end{document}
