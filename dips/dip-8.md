@@ -3,20 +3,20 @@ dip: 8
 author: Piotr Nojszewski <DeSo: @petern | GH: @AeonSw4n >
 created: 2023-02-16
 ---
-## Access Group and New Message Technical Report
+# Access Group and New Message Technical Report
 
 
-### Dynamic Multiparty Key Exchange with Implementation to Group Messaging
+## Dynamic Multiparty Key Exchange with Implementation to Group Messaging
 
 ------------
 
 
-### Introduction
+## Introduction
 
 This document details the design and purpose of three new transactions: `"ACCESS_GROUP,"` `"ACCESS_GROUP_MEMBERS,"` and `"NEW_MESSAGE,"` that were added to the DeSo Core during the [v3.1.0 release](https://github.com/deso-protocol/core/releases/tag/v3.1.0). Access groups enable secure on-chain multiparty key exchange. Our access groups framework is non-interactive, with a single key pair responsible for all group operations[^1]. The member set can be dynamically adjusted, allowing the creation of large groups where access can be frequently granted or revoked. The framework has a storage complexity of O(**n**) to support **n**-party key exchange and an O(1) online running time for adding or removing a single member[^2]. Additionally, removing a single member with a key rotation incurs an O(log(**n**)) running time[^3]. Further, the new transactions enable a more efficient private direct messaging (DM) and introduce private group chat messaging (GC), leveraging access groups for GC membership management. Sending a message to both DM and GC threads incurs an O(1) running time and O(**l**) storage complexity, where **l** is the length of the message sent.
 
 
-### Motivation
+## Motivation
 
 Access groups came to be due to our efforts to implement E2EE group chats on DeSo. Before the v3.1.0 release, DeSo supported direct messaging secured by the cryptographic identities of the participants[^4]. As we approached group chats, we realized that the cryptography used in the 2-party messaging was not adaptable to the multiparty case[^5]. Consequently, a new approach was needed altogether.
 
@@ -28,7 +28,7 @@ Analyzing the problem of implementing group chats, one of the fundamental requir
 2. Storage and indexing of encrypted messages (New Message)
 
 
-### Access Groups
+## Access Groups
 
 Access groups combine a low-complexity multiparty key exchange scheme with a flexible graph-like data structure. Every DeSo user is uniquely identified by their public key, and their private key is used to create proofs of this identity through digital signatures. In access groups, users’ <public key, private key> pairs are used for public-key encryption via ECIES[^8]. To create an access group, the group owner will first generate a secret and register the secret’s public key on the blockchain. To add members to the access group, the group owner (or a moderator) retrieves the group’s secret and encrypts it to each new member. The encrypted keys are then added to the DeSo state, and they’ll reveal the secret key to all members, who hold decryption keys, yet will appear indistinguishable from a random string to every non-member[^9].
 
@@ -44,7 +44,7 @@ In the following sections, we will discuss the implementation details of access 
 
 <br></br>
 
-#### Data Layer
+### Data Layer
 
 This section will analyze what’s stored in the state with each access group transaction. An access group comprises an <strong><code>AccessGroupEntry</code></strong> object containing information about the group, and a collection of <strong><code>AccessGroupMemberEntry</code></strong> objects containing encrypted key share records of each member. The objects are defined as follows:
 
@@ -74,12 +74,12 @@ Users can create access groups by signing and broadcasting `"ACCESS_GROUP"` tran
 It is worth noting that `AccessGroupEntry` doesn’t store any private key material. Private key copies will instead be stored encrypted in the member entries.
 
 
-##### AccessGroupId
+#### AccessGroupId
 
 Each access group is uniquely identified by an *AccessGroupId* equal to the pair `<AccessGroupOwnerPublicKey, AccessGroupKeyName>`. We will sometimes shorthand this pair by e.g. saying “*UserAccessGroupId*” for better readability.
 
 
-##### AccessGroupMemberEntry
+#### AccessGroupMemberEntry
 
 
 ```
@@ -102,7 +102,7 @@ Users can add access group members by signing and broadcasting `"ACCESS_GROUP_ME
 * `ExtraData` field allows storing any key-value data associated with the access group member.
 
 
-##### AccessGroupMemberId
+#### AccessGroupMemberId
 
 Similarly to `AccessGroupEntry` objects, the member entries can be assigned an identifier. Each `AccessGroupMemberEntry` object is uniquely identified by an *AccessGroupMemberId* consisting of
 `<AccessGroupOwnerPublicKey, AccessGroupKeyName, AccessGroupMemberPublicKey>`.
@@ -114,17 +114,17 @@ Similarly to `AccessGroupEntry` objects, the member entries can be assigned an i
 **Diagram 2.** A visual representation of the relationship between access group and access group member objects
 
 
-#### Base Key
+### Base Key
 
 The base key is a particular access group pre-defined for every user. This access group is never stored as part of the DeSo state; however, it exists for the purpose of transaction validation. The group is identified by the id of `<UserPublicKey, null>` where null is an array consisting of 32 byte(0) characters. The base key represents the user’s key pair. In particular, `AccessGroupOwnerPublicKey `and `AccessGroupPublicKey `are the same and equal to the `UserPublicKey` in the base key access group. Since access groups are used for key exchange to mitigate key leakage, the base key cannot have any `AccessGroupMemberEntries` registered.
 
 
-#### Standards
+### Standards
 
 The access group framework is open for community-defined transaction standards. These standards could include encryption schemes, special keys in the `ExtraData,` or special members in access groups. These standards won’t be part of the canonical transaction validation logic in DeSo Core (at least initially) and instead will live in the application layer where Backend or Frontend software can interpret the data accordingly. We suggest two such standards: one related to encryption, and one, which we call the “Default Key Standard,” related to access groups.
 
 
-##### `EncryptedKey` Standard
+#### `EncryptedKey` Standard
 
 It is worth noting that to this point, we haven’t mentioned what exactly is stored in the `EncryptedKey` field of the access group member entries. That’s because DeSo core applies no limitations on this field, and it’s up to the application layer to correctly compute these values.
 
@@ -133,7 +133,7 @@ It is worth noting that to this point, we haven’t mentioned what exactly is st
 Anytime the `EncryptedKey` field is decrypted by a member, it must be verified that the decrypted secret matches the `AccessGroupPublicKey` as specified in the access group entry. If the secret doesn’t match, the group should be ignored. Sometimes, the `EncryptedKey` field might not need decryption. In the case of public group chats, no encryption is needed, yet access groups are used for membership management. In such a case, the `EncryptedKey` can be left empty, and appropriate `ExtraData` keys should be set.
 
 
-##### Default Key Standard
+#### Default Key Standard
 
 Default Key Standard, **DKS**, introduces default key pairs which are intended to work like the user's second key pair. The default key is a particular access group that replaces the user’s owner key pair in all access group-related encryption. First, we define a key derivation function[^12]:
 
@@ -158,12 +158,12 @@ The main advantage of this function is that it is a deterministic one-way functi
 These standards allow for safe access-sharing of the default key, which is responsible for content encryption, with the applications bearing no risk of revealing the user’s primary transactional key. The default key will then be used in all encryption/decryption among access groups. The proper usage of the standard is displayed in **Diagram 2.** There, Alice and Bob have both added their default keys as member entries. So they can now use their default keys to compute the secrets of their respective access groups.
 
 
-#### Transactions
+### Transactions
 
 To set access group and access group member entries in the state, users sign and broadcast `"ACCESS_GROUP"`, `"ACCESS_GROUP_MEMBERS"` transactions. All DeSo transactions implement the `MsgDeSoTxn` type with varying `TxnMeta` transaction metadata types, which effectively determines the transaction type. The transaction metadata fields will in most cases directly match the fields in `AccessGroupEntry` and `AccessGroupMemberEntry`. We also use an operation type `AccessGroupOperationType `to, in some cases, allow for updating or removing state entries.
 
 
-##### `ACCESS_GROUP` Transaction
+#### `ACCESS_GROUP` Transaction
 
 There are two primary operations that the DeSo blockchain enables to modify the `AccessGroupEntry` records: **Set** and **Update**. These operations are facilitated through an  `AccessGroupOperationType` byte field in transaction metadata.
 
@@ -222,7 +222,7 @@ MsgDeSoTxn
 
 
 
-##### `ACCESS_GROUP_MEMBERS` Transaction
+#### `ACCESS_GROUP_MEMBERS` Transaction
 
 There are three operations that the DeSo blockchain enables to modify the `AccessGroupMemberEntry` records: **Set**, **Update**, and **Remove**. These operations are facilitated through an `AccessGroupMemberOperationType` byte field in transaction metadata. The transaction allows performing a given operation on multiple access group members simultaneously. These members are passed through a metadata field `AccessGroupMembersList` which is an array of `AccessGroupMember` types:
 
@@ -287,7 +287,7 @@ This transaction deletes existing `AccessGroupMemberEntry` records based on the 
 2. Every `AccessGroupMember` in `AccessGroupMembersList` must have an `AccessGroupKeyName` identical to the corresponding `AccessGroupMemberEntry` that’s currently stored in the state.
 
 
-#### Key Rotation
+### Key Rotation
 
 Key rotation is useful in the applications of access groups such as group chats. It allows revoking the access of a chosen subset of members and moving to a new secret value known only to the remaining members. The trivial solution is to generate a new secret for the group and share it with all non-removed members. We call this algorithm a **Key Refresh**[^16]. If we remove just a single member from a group of **n** members, Key Refresh yields a computational complexity of O(**n**). Key Refresh is not too efficient, as e.g. attempting to remove a single member from a populous group of 1 million members would mean updating and re-encrypting a million members every time. Our efforts led us to find an algorithm with a lower complexity of O(log(**n**)), thanks to a special structure called **Binary Access Group**. This structure drops the cost of removing a single member and rotating the key in said group of 1 million members down to 20 update operations[^17].
 
@@ -298,7 +298,7 @@ Key rotation is useful in the applications of access groups such as group chats.
 
 <br></br>
 
-##### **Binary Access Group**
+#### **Binary Access Group**
 
 The Binary Access Group is a name for a special nesting of membership relations between access groups in a pattern resembling a complete binary tree. The tree's root node represents the access group metadata, and the tree's leaf nodes represent the proper members of the key exchange. The non-root, non-leaf nodes are referred to as sub-groups[^18]. The root node stores the encrypted main group secret. Each access group node **BN**, including the root, has at most two children access group members that can access **BN** group’s secret. The childrens’ sub-trees divide the subset of proper members under **BN**’s sub-tree into two halves. The proper key exchange members, leaf nodes, should always be on the same depth equal to the ceil(log(**n**)), where ceil is the ceiling function. The total number of nodes in the Binary Access Group tree is about 2***n**, counting up from the main root access group down to the leaf descendant member groups. In addition to the Binary Access Group, we store a Membership Access Group with all proper group members for reference purposes.
 
@@ -347,7 +347,7 @@ To remove a single member **M** from the group with a key rotation, we must upda
 As we rotate the key, we update nodes on the path from leaf(**M**) to the root. Along the way, we also update the members' encrypted keys. This results in a total computational complexity of O(log(**n**)).
 
 
-### New Message
+## New Message
 
 Along with the release of access groups, v3.1.0 introduces a redesigned messaging framework based on the `"NEW_MESSAGE"` transaction. This transaction replaces and deprecates the previously used `"PRIVATE_MESSAGE"` transaction. The DeSo state machine uses a homogeneous data type (`NewMessageEntry`) for new messages sent in both DM and GC threads. The primary payload of these records is the E2EE message ciphertext. This ciphertext is secured by the key exchange between chat participants. Aside from the ciphertext, all messages have a sender id and recipient id. The ids reference access groups and are of type _AccessGroupId_. In other words, if we consider a graph with all access groups as vertices, messages are edges, similarly to access group member records. Messages also have a timestamp indicating when the message was sent. The timestamps will allow for the chronological ordering of messages in the application layer.
 
@@ -365,7 +365,7 @@ Each message sent must belong to either a DM or a GC thread. A thread refers to 
 The implemented new message transactions allow for two operations: **_Create_** and **_Update_**. The users can send messages to their DM and GC threads using the _Create_ operation, and they can later edit their messages using the _Update_ operation.
 
 
-#### Data Layer
+### Data Layer
 
 Executing the `"NEW_MESSAGE"` transaction sets a <strong><code>NewMessageEntry</code></strong> record in the DeSo state.
 
@@ -397,7 +397,7 @@ As previously mentioned, new message entries specify the access group ids for th
 * `ExtraData` allows for storing any key-value data associated with the message.
 
 
-##### _NewMessageId_
+#### _NewMessageId_
 
 The current implementation of DeSo Core indexes DMs and GCs differently, even though they store the same data types. This is done for optimization purposes. However, each new message entry can be associated with a unique global identifier across the entire DeSo state. Aside from containing the explicit fields of the new message entry, this identifier uses one implicit single-byte value of `NewMessageType`, which determines if the message is a DM or a GC. The final identifier looks as follows:
 
@@ -409,7 +409,7 @@ The current implementation of DeSo Core indexes DMs and GCs differently, even th
 
 
 
-#### Encryption
+### Encryption
 
 To secure messages, we suggest using the same public-key encryption scheme as the `EncryptedKey` standard in access groups. In message encryption, we will first be computing an ECDH shared secret, similar to how it was done in the deprecated private message framework. The shared secret is computed between the private key of the sender’s access group and the public key of the recipient’s access group. The shared secret is then used to encrypt the message content via ECIES. The resulting ciphertext can then be safely published to the DeSo state machine using a `"NEW_MESSAGE"` transaction.
 
@@ -421,12 +421,12 @@ The decryption procedure varies slightly between DMs and GCs:
 * **To decrypt a GC message**: the GC access group is always the message recipient. Find the user’s member entry in the GC access group, and decrypt the `EncryptedKey` to get the group’s private key. Use the group’s private key and the sender’s public key to compute the ECDH secret. This secret is the decryption key.
 
 
-#### Timestamp
+### Timestamp
 
 Each message has a non-zero unix timestamp in nanoseconds. The sender user provides the timestamp, and its accuracy is not validated in the DeSo Core. Users can potentially submit outdated or future timestamps; however, we decided to accept this scenario, as it could lead to interesting features in messaging applications. For instance, submitting a message with a future timestamp could be seen as a “deliver in the future” functionality. Chat clients could always display messages sent before the user’s current timestamp to disregard future messages. On the other hand, sending messages with past timestamps could be seen as an attempt to overwrite the chat history. We think this won't be much of an issue, and the application layer could implement standards that prevent this.
 
 
-#### Anonymity
+### Anonymity
 
 Transactions on DeSo are not obfuscated. This means that everyone on the network can read the metadata of every transaction. In particular, everyone can see members of an access group or the sender and the recipient of a message. Each valid transaction also contains a fee paid by the transactor. Given that DeSo’s blockchain data is public, it appears that our intuitive notion of anonymity is hindered. However, we believe reaching anonymity can be solved in the application layer. Perhaps a messaging application can be made that anonymizes users in all their chats, such that the only ones knowledgeable of user’s threads are the chat participants and the Anonymizer App.
 
@@ -443,12 +443,12 @@ An efficient protocol that fulfills these properties for DMs and GCs is an open 
 In this scheme, only Alice, Bob, and the App know who’s communicating. We will leave the proof of anonymity of the Anonymizer App to the reader. We anticipate other, more robust solutions to anonymization to arise, especially for group chats.
 
 
-#### Transaction
+### Transaction
 
 To set new message entries in the state, users sign and broadcast `"NEW_MESSAGE" `transactions. The transaction metadata will contain two organizational byte fields `NewMessageType` and `NewMessageOperation`.
 
 
-##### NEW_MESSAGE Transaction
+#### NEW_MESSAGE Transaction
 
 **<span style="text-decoration:underline;">Sending a Direct Message</span>**
 
@@ -520,7 +520,7 @@ The `NewMessageType` must be set to **1**; the `NewMessageOperation` must be set
 The _NewMessageId_ is identical to that of <span style="text-decoration:underline;">Sending a Group Chat Message</span> and the transaction metadata is identical to the <span style="text-decoration:underline;">Sending a Direct Message</span>. The `TimestampNanos` must match an existing message. This transaction will overwrite the `NewMessageEntry` stored under the _NewMessageId_.
 
 
-#### Additional Features
+### Additional Features
 
 This section looks at potential application-layer features that can be implemented using the access group and new message framework.
 
@@ -532,7 +532,7 @@ This section looks at potential application-layer features that can be implement
 * <span style="text-decoration:underline;">Messaging Requests:</span> This would allow users to filter out potential unwanted groups. With messaging requests, if the user is added to some messaging thread, they will see an option to accept the invitation prior to seeing the thread messages. This can be implemented via the _association_ transaction storing (_MessagingThread) -> (_“AcceptRequest”) -> (true) mappings in the DeSo state.
 
 
-### Limitations
+## Limitations
 
 While our framework generally does well in the use case of group chats, there are a few limitations that we must yet to overcome.
 
@@ -549,7 +549,7 @@ This limitation appears challenging to overcome on a public blockchain. Like in 
 The transaction source code is flexible and we intend to address this issue in a future fork.
 
 
-### Appendix A. Backward and Forward Links
+## Appendix A. Backward and Forward Links
 
 During a key rotation in access groups, an old secret is updated with a new one. Now, we don’t necessarily want to lose access to the old key, as it can still be useful in the applications of access groups, such as group chats where we want to maintain access to historical messages. In other words, we want a way to explicitly prevent forward secrecy between the old and the new keys. Usually, the new key is uncorrelated with the old key, so discarding the old key means it’ll be permanently erased. To ensure that access to the old key is not lost, the previous key should be persisted in the access group’s metadata. A safe one-way secret share can be saved, allowing the new key to access the old. We call this one-way share a Backward Link.
 
@@ -594,7 +594,7 @@ The ForwardLinkRecord structure is almost identical to the BackwardLinkRecord. T
 
 
 <!-- Footnotes themselves at the bottom. -->
-## Notes
+# Notes
 
 [^1]: It is worth noting that in our approach, only a single party is responsible for the secret generation. We do not consider a key-agreement scenario. While a single owner key pair is used in the registration and operation of an access group, other keys can be given permissions to this owner key pair via DeSo derived keys.
 
