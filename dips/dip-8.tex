@@ -369,7 +369,7 @@ The Binary Access Group is a name for a special nesting of membership relations 
 
 \begin{enumerate}
   \item Create the Membership Access Group \textbf{MAG}, by creating an access group entry with key name \textbf{KN}, secret key \textbf{MAGpriv} generated using the Default Key Standard, DKS 2. and \texttt{ExtraData} key “\textit{BinaryAccessGroup}” with a value of byte(1). Then add the single member \textbf{M1} to \textbf{MAG} with an \texttt{ExtraData} key “\textit{BinaryIndex}” and value of byte(1).
-  \item Create the Leaf Access Group \textbf{BN1} for member \textbf{M1}, \textit{leaf}(\textbf{M1}) = \textbf{BN1}. The group has index \textit{id}(\textbf{BN1}) = 1. This group is a leaf node corresponding to \textbf{M1}. The key name is \textit{key}(\textbf{BN1}) = \textit{sha256x2}(\textbf{KN} || \textbf{“-”} || \textit{id}(\textbf{BN1})), secret key according to \textbf{DKS 2.}, and a single member with \textbf{M1}’s access group.
+  \item Create the Leaf Access Group \textbf{BN1} for member \textbf{M1}, \textit{leaf}(\textbf{M1}) = \textbf{BN1}. The group has index \textit{id}(\textbf{BN1}) = 1. This group is a leaf node corresponding to \textbf{M1}. The key name is \textit{key}(\textbf{BN1}) = \textit{sha256x2}(\textbf{KN} || \textbf{“-”} || \textit{id}(\textbf{BN1})), secret key according to \textbf{DKS 2.}.
   \item Create a Non-Leaf Access Group \textbf{BN2} with index \textit{id}(\textbf{BN2}) = 2, key name is \textit{key}(\textbf{BN2}) = \textit{sha256x2}(\textbf{KN} || \textbf{“-”} || \textit{id}(\textbf{BN2})), secret is \textbf{MAGpriv}.
   \item Add \textbf{BN1} as a member of \textbf{BN2} by creating an appropriate access group member entry.
 \end{enumerate}
@@ -503,7 +503,7 @@ Transactions on DeSo are not obfuscated. This means that everyone on the network
 \subsection{Transaction}
 To set new message entries in the state, users sign and broadcast \texttt{"NEW\_MESSAGE"} transactions. The transaction metadata will contain two organizational byte fields \texttt{NewMessageType} and \texttt{NewMessageOperation.}
 
-\subsubsection{NEW\_MESSAGE Transaction}
+\subsubsection{\texttt{NEW\_MESSAGE} Transaction}
 
 \noindent\underline{\textbf{Sending a Direct Message}}\\
 The \texttt{NewMessageType} must be set to \textbf{0}. The \texttt{NewMessageOperation} must be set to \textbf{0}.\\
@@ -633,6 +633,6 @@ ForwardLinkRecord
 \noindent The ForwardLinkRecord structure is almost identical to the BackwardLinkRecord. The only difference is that it contains the field \texttt{EncryptedCurrentAccessGroupPrivateKey}, which is the current, new key secret encrypted to the \texttt{PreviousAccessGroupPublicKey.}
 
 \section{Acknowledgments}
-Special thanks go to Keshav Maheshwari, LazyNina, DiamondHands, and Karthic Rao who contributed to the design and implementation of the Access Group and New Message framework.
+For the full list of contributors to the Access Group and New Message framework, refer to the DeSo Core Releases \href{https://github.com/deso-protocol/core/releases/tag/v3.1.0}{v3.1.0} and \href{https://github.com/deso-protocol/core/releases/tag/v3.1.1}{v3.1.1} and DeSo Backend Releases \href{https://github.com/deso-protocol/backend/releases/tag/v3.1.0}{v3.1.0} and \href{https://github.com/deso-protocol/backend/releases/tag/v3.1.1}{v3.1.1}.
 
 \end{document}

@@ -4,7 +4,6 @@ author: Piotr Nojszewski <DeSo: @petern | GH: @AeonSw4n >
 created: 2023-02-16
 ---
 # Access Group and New Message Technical Report
-### Dynamic Multiparty Key Exchange with Implementation to Group Messaging
 
 
 ## Introduction
@@ -37,8 +36,6 @@ In the following sections, we will discuss the implementation details of access 
 
 
 <strong>Diagram 1.</strong> Simplified overview of three access groups created by Alice, Bob, and Carol.
-
-<br></br>
 
 ### Data Layer
 
@@ -163,7 +160,7 @@ To set access group and access group member entries in the state, users sign and
 
 There are two primary operations that the DeSo blockchain enables to modify the `AccessGroupEntry` records: **Set** and **Update**. These operations are facilitated through an  `AccessGroupOperationType` byte field in transaction metadata.
 
-<strong><span style="text-decoration:underline;">Set an <code>AccessGroupEntry</code></span></strong>
+##### Set an <code>AccessGroupEntry</code>
 
 The <strong><code>AccessGroupOperationType</code></strong> must be set to <strong><code>2</code></strong>
 
@@ -190,7 +187,7 @@ MsgDeSoTxn
 ```
 
 
-<strong><span style="text-decoration:underline;">Update an <code>AccessGroupEntry</code></span></strong>
+##### Update an <code>AccessGroupEntry</code>
 
 The <strong><code>AccessGroupOperationType</code></strong> must be set to <strong><code>3</code></strong>.
 
@@ -236,7 +233,7 @@ AccessGroupMember
 
 These objects are stored directly as `AccessGroupMemberEntries` given the *AccessGroupMemberId*, a combination of *AccessGroupId* from transaction metadata and `AccessGroupMemberPublicKey`.
 
-<strong><span style="text-decoration:underline;">Set an <code>AccessGroupMemberEntry</code></span></strong>
+##### Set an <code>AccessGroupMemberEntry</code>
 
 The `AccessGroupMemberOperationType` must be set to **2.**
 
@@ -263,13 +260,13 @@ MsgDeSoTxn
 ```
 
 
-<strong><span style="text-decoration:underline;">Update <code>AccessGroupMemberEntry</code></span></strong>
+##### Update <code>AccessGroupMemberEntry</code>
 
 The `AccessGroupMemberOperationType` must be set to **3**.
 
 This transaction overwrites the `AccessGroupMemberEntry` records based on the *AccessGroupId* and individual *AccessGroupMemberId* from the metadata. The transaction structure is identical to the **Set `AccessGroupMemberEntry`** operation.
 
-<strong><span style="text-decoration:underline;">Remove <code>AccessGroupMemberEntry</code></span></strong>
+##### Remove <code>AccessGroupMemberEntry</code>
 
 The `AccessGroupMemberOperationType` must be set to **4**.
 
@@ -298,11 +295,11 @@ Key rotation is useful in the applications of access groups such as group chats.
 
 The Binary Access Group is a name for a special nesting of membership relations between access groups in a pattern resembling a complete binary tree. The tree's root node represents the access group metadata, and the tree's leaf nodes represent the proper members of the key exchange. The non-root, non-leaf nodes are referred to as sub-groups[^18]. The root node stores the encrypted main group secret. Each access group node **BN**, including the root, has at most two children access group members that can access **BN** group’s secret. The childrens’ sub-trees divide the subset of proper members under **BN**’s sub-tree into two halves. The proper key exchange members, leaf nodes, should always be on the same depth equal to the ceil(log(**n**)), where ceil is the ceiling function. The total number of nodes in the Binary Access Group tree is about 2***n**, counting up from the main root access group down to the leaf descendant member groups. In addition to the Binary Access Group, we store a Membership Access Group with all proper group members for reference purposes.
 
-**Indexing**
+##### Indexing
 
 Each node **BN** in the Binary Access Group tree has a unique index, *id*(**BN**), between 1 and **n**. This index equals the **BN**’s in-order position in the tree[^19]. We use the index in the **BN**’s access group key name *key*(**BN**). If the main root access group has a key name **KN**, then the **BN**’s key name is the result of hashing **KN** concatenated with “-” and *id*(**BN**), that is _key_(**BN**) = _sha256x2_(**KN** || “-” || _id_(**BN**))[^20]. This key function is collision-resistant and should not overlap with an existing access group. **Diagram 3.** displays proper node indexing for a couple of different sizes of the Binary Access Group.
 
-**Adding a Single Member**
+##### Adding a Single Member
 
 **<span style="text-decoration:underline;">A. If the group doesn’t exist:</span>** Assuming the user wants to name the access group with key name **KN**, and add a single member **M1**. The algorithm goes as follows:
 
@@ -322,11 +319,11 @@ Each node **BN** in the Binary Access Group tree has a unique index, *id*(**BN**
 
 The total number of nodes that will be added to the tree is 2***n**, which means that the average storage complexity and running time of adding a single member is O(1).
 
-**Retrieving Group Secret**
+##### Retrieving Group Secret
 
 The main key exchange secret **S** is the secret of the Membership Access Group **MAG**. As a member **M** of the **MAG**, one can get the secret **S** by traversing the path from the leaf node of **M** to the root of the Binary Access Group tree. We use a recursive algorithm where we start at the child and use the child node’s secret to decrypt the parent node secret and then traverse up[^22]. When we reach the root, we return with **S**. The leaf node is decrypted using the member **M**’s secret key. As we traverse from the leaf to the root, we perform ceil(log(**n**)) decryptions which yield a total running time of O(log(**n**)).
 
-**Removing a Single Member**
+##### Removing a Single Member
 
 To remove a single member **M** from the group with a key rotation, we must update all nodes in the path from the Leaf Access Group of **M** to the tree's root node. We perform the following algorithm:
 
@@ -446,7 +443,7 @@ To set new message entries in the state, users sign and broadcast `"NEW_MESSAGE"
 
 #### NEW_MESSAGE Transaction
 
-**<span style="text-decoration:underline;">Sending a Direct Message</span>**
+##### Sending a Direct Message
 
 The `NewMessageType` must be set to **0**; the `NewMessageOperation` must be set to **0**.
 
@@ -488,13 +485,13 @@ MsgDeSoTxn
 ```
 
 
-**<span style="text-decoration:underline;">Updating a Direct Message</span>**
+##### Updating a Direct Message
 
 The `NewMessageType` must be set to **0**; the `NewMessageOperation` must be set to **1**.
 
 The _NewMessageId_ and the transaction structure are identical to <span style="text-decoration:underline;">Sending a Direct Message</span> case. The `TimestampNanos` must match an existing message. This transaction will overwrite the `NewMessageEntry` stored under the _NewMessageId_.
 
-**<span style="text-decoration:underline;">Sending a Group Chat Message</span>**
+##### Sending a Group Chat Message
 
 The `NewMessageType` must be set to **1**; the `NewMessageOperation` must be set to **0**.
 
@@ -509,7 +506,7 @@ The _NewMessageId_ for a group chat message is:
 
 The transaction structure is identical to <span style="text-decoration:underline;">Sending a Direct Message</span>. This transaction will overwrite the `NewMessageEntry` stored under the _NewMessageId_.
 
-**<span style="text-decoration:underline;">Updating a Group Chat Message</span>**
+##### Updating a Group Chat Message
 
 The `NewMessageType` must be set to **1**; the `NewMessageOperation` must be set to **0**.
 
