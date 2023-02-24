@@ -315,7 +315,7 @@ Each node **BN** in the Binary Access Group tree has a unique index, *id*(**BN**
 1. Comparing the current binary access group tree topology to a perfect binary tree, find the index **mID** of the smallest in-order leaf not currently present in the tree[^21]. If the tree is fully saturated, assume **n**+1 to be this index.
 2. Add the member **M** to the Membership Access Group **MAG**, set the `ExtraData` key “*BinaryIndex*” to the value of _byte_(**mID**), similarly to **A.1.**
 3. Create a Leaf Access Group **BN** for member **M**, _leaf_(**M**) = **BN**, in index _id_(**BN**) = **mID**. Proceed analogously to **A.2**.
-4. Create a path of Non-Leaf Access Group nodes between **BN** and the current tree root. Proceed analogously to **A.3.** Each node should have an index matching its in-order position, assuming a perfect tree. In particular, the parent of **BN** has an id of _id_(**BN**)+1, and the grandparent has the id of id(**BN**)+2, etc.
+4. Create a path of Non-Leaf Access Group nodes between **BN** and the current tree root. Proceed analogously to **A.3.** Each node should have an index matching its in-order position, assuming a perfect tree.
 
 The total number of nodes that will be added to the tree is 2***n**, which means that the average storage complexity and running time of adding a single member is O(1).
 

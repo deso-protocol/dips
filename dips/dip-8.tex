@@ -380,7 +380,7 @@ The Binary Access Group is a name for a special nesting of membership relations 
   \item Comparing the current binary access group tree topology to a perfect binary tree, find the index \textbf{mID} of the smallest in-order leaf not currently present in the tree\fn{Members can be removed, which may cause the tree to lose balance. Many re-balancing algorithms can be used. We recommend one approach of only inserting the next largest index.}. If the tree is fully saturated, assume \textbf{n}+1 to be this index.
   \item Add the member \textbf{M} to the Membership Access Group \textbf{MAG}, set the \texttt{ExtraData} key “\textit{BinaryIndex}” to the value of \textit{byte}(\textbf{mID}), similarly to \textbf{A.1.}
   \item Create a Leaf Access Group \textbf{BN} for member \textbf{M}, \textit{leaf}(\textbf{M}) = \textbf{BN}, in index \textit{id}(\textbf{BN}) = \textbf{mID}. Proceed analogously to \textbf{A.2}.
-  \item Create a path of Non-Leaf Access Group nodes between \textbf{BN} and the current tree root. Proceed analogously to \textbf{A.3.} Each node should have an index matching its in-order position, assuming a perfect tree. In particular, the parent of \textbf{BN} has an id of \textit{id}(\textbf{BN})+1, and the grandparent has the id of id(\textbf{BN})+2, etc.
+  \item Create a path of Non-Leaf Access Group nodes between \textbf{BN} and the current tree root. Proceed analogously to \textbf{A.3.} Each node should have an index matching its in-order position, assuming a perfect binary tree.
 \end{enumerate}
 
 \noindent The total number of nodes that will be added to the tree is 2*\textbf{n}, which means that the average storage complexity and running time of adding a single member is O(1).\\
