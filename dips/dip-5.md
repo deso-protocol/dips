@@ -4,6 +4,7 @@ title: Rotating Messaging Keys
 author: Piotr Nojszewski <GH: @AeonSw4n | DeSo: @petern> 
 discussions-url: N/A
 created: 2021-12-25
+note: This Dip is now outdated. Check out Dip-8 on Access Groups for the latest DeSo messaging protocol.
 ---
 
 ## One-Line Description
