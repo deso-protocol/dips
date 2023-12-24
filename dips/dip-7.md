@@ -1,6 +1,6 @@
 ---
 dip: 7
-title: HyperSync: The fastest and most scalable way to download a blockchain
+title: HyperSync: Fast and scalable way to download a blockchain
 author: Piotr Nojszewski <DeSo: @petern | GH: @AeonSw4n >
 discussions-url: N/A
 created: 2022-01-29
